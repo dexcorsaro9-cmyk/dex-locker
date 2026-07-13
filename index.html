@@ -401,8 +401,7 @@ const ROME_BBOX = '41.40,11.73,42.30,13.30';
 const OVERPASS_ENDPOINTS = [
   'https://overpass-api.de/api/interpreter',
   'https://overpass.kumi.systems/api/interpreter',
-  'https://overpass.private.coffee/api/interpreter',
-  'https://overpass.osm.jp/api/interpreter'
+  'https://overpass.private.coffee/api/interpreter'
 ];
 
 const BRANDS = {
@@ -454,7 +453,7 @@ L.tileLayer(
   isDark
     ? 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png'
     : 'https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png',
-  { attribution:'<b>Dex Locker v2.0</b> | &copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> &copy; CARTO', maxZoom:20 }
+  { attribution:'<b>Dex Locker v2.1</b> | &copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> &copy; CARTO', maxZoom:20 }
 ).addTo(map);
 
 const cluster = L.markerClusterGroup({
@@ -496,12 +495,14 @@ function refPoint(){
 }
 
 // ----- Fetch da Overpass -----
-async function fetchLockers(bbox){
-  const query = `[out:json][timeout:25];(node["amenity"="parcel_locker"](${bbox});way["amenity"="parcel_locker"](${bbox}););out center tags;`;
-  let lastErr;
+// minExpected: sotto questa soglia il risultato è sospetto (query troncata dal
+// server sotto carico) → si prova il server successivo e si tiene il migliore.
+async function fetchLockers(bbox, minExpected = 0){
+  const query = `[out:json][timeout:50];(node["amenity"="parcel_locker"](${bbox});way["amenity"="parcel_locker"](${bbox}););out center tags;`;
+  let best = null, lastErr;
   for (const url of OVERPASS_ENDPOINTS){
     const ctrl = new AbortController();
-    const timer = setTimeout(() => ctrl.abort(), 25000);
+    const timer = setTimeout(() => ctrl.abort(), 55000);
     try{
       const r = await fetch(url, {
         method:'POST',
@@ -511,10 +512,14 @@ async function fetchLockers(bbox){
       });
       if (!r.ok) throw new Error('HTTP ' + r.status);
       const data = await r.json();
-      return data.elements || [];
+      const truncated = data.remark && /timed out|runtime error/i.test(data.remark);
+      const elements = data.elements || [];
+      if (!truncated && elements.length >= minExpected) return elements;   // risultato pieno e plausibile
+      if (!best || elements.length > best.length) best = elements;         // tieni il migliore finora
     }catch(e){ lastErr = e; }
     finally{ clearTimeout(timer); }
   }
+  if (best && best.length) return best;   // meglio un risultato parziale che niente
   throw lastErr || new Error('Overpass non raggiungibile');
 }
 
@@ -553,8 +558,15 @@ async function load(bbox, label){
   if (firstTime) setLoading(true);
   $('btnReload').classList.add('spin');
   try{
-    const elements = await fetchLockers(bbox);
-    lockers = parseElements(elements);
+    const isProvince = bbox === ROME_BBOX;
+    const elements = await fetchLockers(bbox, isProvince ? 100 : 0);
+    const fresh = parseElements(elements);
+    // Non sostituire dati buoni con un risultato troncato peggiore
+    if (isProvince && loadedOnce && fresh.length < lockers.length * 0.5){
+      toast('Server dati affollato: tengo i dati completi già caricati', 3500);
+      return;
+    }
+    lockers = fresh;
     loadedOnce = true;
     renderChips();
     renderMarkers();
