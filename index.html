@@ -549,8 +549,7 @@ function refPoint(){
 // minExpected: sotto questa soglia il risultato è sospetto (query troncata dal
 // server sotto carico) → si prova il server successivo e si tiene il migliore.
 async function fetchLockers(bbox, minExpected = 0){
-  const query = `[out:json][timeout:50];(node["amenity"="parcel_locker"](${bbox});way["amenity"="parcel_locker"](${bbox}););out center tags;`;
-  let best = null, lastErr;
+const query = `[out:json][timeout:60];(node["amenity"="parcel_locker"](${bbox});way["amenity"="parcel_locker"](${bbox});node["vending"~"parcel_pickup|parcel_mail_in"](${bbox});way["vending"~"parcel_pickup|parcel_mail_in"](${bbox}););out center tags;`;  let best = null, lastErr;
   for (const url of OVERPASS_ENDPOINTS){
     const ctrl = new AbortController();
     const timer = setTimeout(() => ctrl.abort(), 55000);
