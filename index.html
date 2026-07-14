@@ -419,6 +419,7 @@
   <div class="set-info">
     <div class="set-info-row"><span>Versione app</span><b id="set-version"></b></div>
     <div class="set-info-row"><span>Locker caricati</span><b id="set-count"></b></div>
+    <div class="set-info-row"><span>Da rete ufficiale InPost</span><b id="set-inpost"></b></div>
     <div class="set-info-row"><span>Ultimo aggiornamento dati</span><b id="set-updated"></b></div>
     <div class="set-info-row"><span>Preferiti salvati</span><b id="set-favs"></b></div>
   </div>
@@ -446,7 +447,7 @@
    Geocoding: Nominatim (OpenStreetMap)
    ============================================================ */
 
-const APP_VERSION = '2.2';
+const APP_VERSION = '3.0';
 const ROME_BBOX = '41.40,11.73,42.30,13.30';
 
 const OVERPASS_ENDPOINTS = [
@@ -549,7 +550,9 @@ function refPoint(){
 // minExpected: sotto questa soglia il risultato è sospetto (query troncata dal
 // server sotto carico) → si prova il server successivo e si tiene il migliore.
 async function fetchLockers(bbox, minExpected = 0){
-const query = `[out:json][timeout:60];(node["amenity"="parcel_locker"](${bbox});way["amenity"="parcel_locker"](${bbox});node["vending"~"parcel_pickup|parcel_mail_in"](${bbox});way["vending"~"parcel_pickup|parcel_mail_in"](${bbox}););out center tags;`;  let best = null, lastErr;
+  // Include anche il vecchio schema di tagging OSM (vending_machine per pacchi)
+  const query = `[out:json][timeout:50];(node["amenity"="parcel_locker"](${bbox});way["amenity"="parcel_locker"](${bbox});node["amenity"="vending_machine"]["vending"~"parcel_pickup|parcel_mail_in"](${bbox}););out center tags;`;
+  let best = null, lastErr;
   for (const url of OVERPASS_ENDPOINTS){
     const ctrl = new AbortController();
     const timer = setTimeout(() => ctrl.abort(), 55000);
@@ -596,6 +599,58 @@ function parseElements(elements){
   return out;
 }
 
+// ----- Fonte ufficiale InPost Italia -----
+// Stessa API pubblica che alimenta la mappa su inpost.it: punti operativi
+// con coordinate, indirizzo e orari. Solo locker (esclusi i punti di ritiro in negozio).
+async function fetchInPost(bbox){
+  const [s, w, n, e] = bbox.split(',').map(Number);
+  const cLat = (s + n) / 2, cLon = (w + e) / 2;
+  const radius = Math.min(Math.round(haversine({lat:s, lon:w}, {lat:n, lon:e}) / 2), 80000);
+  const out = [];
+  let page = 1, totalPages = 1;
+  do{
+    const ctrl = new AbortController();
+    const timer = setTimeout(() => ctrl.abort(), 20000);
+    try{
+      const url = `https://api-it-local-points.easypack24.net/v1/points?type=parcel_locker&status=Operating&relative_point=${cLat.toFixed(5)},${cLon.toFixed(5)}&max_distance=${radius}&per_page=500&page=${page}`;
+      const r = await fetch(url, { signal: ctrl.signal });
+      if (!r.ok) throw new Error('HTTP ' + r.status);
+      const data = await r.json();
+      for (const p of (data.items || [])){
+        const lat = p.location?.latitude, lon = p.location?.longitude;
+        if (lat == null || lon == null) continue;
+        if (lat < s || lat > n || lon < w || lon > e) continue;   // tieni solo l'area richiesta
+        const ad = p.address_details || {};
+        out.push({
+          id: 'inpost/' + p.name,
+          lat, lon,
+          brand: 'inpost',
+          official: true,
+          tags: {
+            name: p.display_name || ('InPost Locker ' + p.name),
+            ref: p.name,
+            opening_hours: p.location_247 ? '24/7' : (p.opening_hours || ''),
+            'addr:street': [ad.street, ad.building_number].filter(Boolean).join(' ') || (p.address?.line1 || ''),
+            'addr:city': ad.city || '',
+            note: p.location_description || ''
+          }
+        });
+      }
+      totalPages = data.total_pages || 1;
+    }finally{ clearTimeout(timer); }
+    page++;
+  }while(page <= totalPages && page <= 12);
+  return out;
+}
+
+// Fusione fonti: se un locker InPost di OSM è a <60 m da un punto ufficiale,
+// vince il dato ufficiale (più preciso e aggiornato)
+function mergeSources(osm, official){
+  if (!official.length) return osm;
+  const kept = osm.filter(o => o.brand !== 'inpost' || !official.some(f => haversine(o, f) < 60));
+  return kept.concat(official);
+}
+
 // ----- Cache locale: avvio istantaneo e offline -----
 const CACHE_KEY = 'dexlocker-v1';
 const cache = {
@@ -609,11 +664,20 @@ async function load(bbox, label){
   $('btnReload').classList.add('spin');
   try{
     const isProvince = bbox === ROME_BBOX;
-    const elements = await fetchLockers(bbox, isProvince ? 100 : 0);
-    const fresh = parseElements(elements);
-    // Non sostituire dati buoni con un risultato troncato peggiore
-    if (isProvince && loadedOnce && fresh.length < lockers.length * 0.5){
-      toast('Server dati affollato: tengo i dati completi già caricati', 3500);
+    // Le due fonti viaggiano in parallelo: se una fallisce, basta l'altra
+    const [osmRes, ipRes] = await Promise.allSettled([
+      fetchLockers(bbox, isProvince ? 20 : 0),
+      fetchInPost(bbox)
+    ]);
+    const osm      = osmRes.status === 'fulfilled' ? parseElements(osmRes.value) : [];
+    const official = ipRes.status === 'fulfilled' ? ipRes.value : [];
+    if (osmRes.status !== 'fulfilled' && !official.length){
+      throw (osmRes.reason || new Error('Nessuna fonte dati raggiungibile'));
+    }
+    const fresh = mergeSources(osm, official);
+    // Non sostituire dati buoni con un risultato peggiore (una fonte momentaneamente giù)
+    if (loadedOnce && fresh.length < lockers.length * 0.5){
+      toast('Una fonte dati è momentaneamente giù: tengo i dati già caricati', 3500);
       return;
     }
     lockers = fresh;
@@ -622,7 +686,7 @@ async function load(bbox, label){
     renderMarkers();
     $('subtitle').textContent = `${lockers.length.toLocaleString('it-IT')} locker · ${label}`;
     toast(firstTime
-      ? `Trovati ${lockers.length.toLocaleString('it-IT')} locker 📦`
+      ? `Trovati ${lockers.length.toLocaleString('it-IT')} locker 📦${official.length ? ` (${official.length.toLocaleString('it-IT')} da InPost ufficiale)` : ''}`
       : `Dati aggiornati: ${lockers.length.toLocaleString('it-IT')} locker ✓`);
     $('btnArea').classList.remove('show');
     cache.set({ ts: Date.now(), label, lockers });
@@ -766,6 +830,7 @@ function openSheet(lk){
   if (t.ref)  rows.push({ icon:'<path d="M4 7h16M4 12h16M4 17h10"/>', text: 'Codice: ' + t.ref });
   if (t.covered === 'yes' || t.indoor === 'yes') rows.push({ icon:'<path d="M3 11l9-7 9 7"/><path d="M5 10v10h14V10"/>', text:'Al coperto' });
   if (t.note) rows.push({ icon:'<path d="M12 8v5M12 16.5v.5"/><circle cx="12" cy="12" r="9"/>', text: t.note });
+  if (lk.official) rows.push({ icon:'<path d="M20 6L9 17l-5-5"/>', text:'Dato ufficiale InPost' });
   $('sh-rows').innerHTML = rows.map(r =>
     `<div class="sh-row"><svg viewBox="0 0 24 24">${r.icon}</svg><span>${r.text}</span></div>`
   ).join('');
@@ -956,6 +1021,7 @@ map.on('moveend', () => {
 function openSettings(){
   $('set-version').textContent = 'v' + APP_VERSION;
   $('set-count').textContent = lockers.length.toLocaleString('it-IT');
+  $('set-inpost').textContent = lockers.filter(l => l.official).length.toLocaleString('it-IT');
   const c = cache.get();
   $('set-updated').textContent = c?.ts
     ? new Date(c.ts).toLocaleString('it-IT', { day:'2-digit', month:'2-digit', hour:'2-digit', minute:'2-digit' })
