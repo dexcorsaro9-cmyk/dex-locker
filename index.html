@@ -306,6 +306,20 @@
   .set-btn svg{width:17px;height:17px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
   .set-btn.danger{color:var(--danger);border-color:color-mix(in srgb, var(--danger) 40%, var(--line))}
   .set-note{font-size:11px;color:var(--ink-2);font-weight:500;text-align:center;margin-top:4px}
+  .set-field{margin-bottom:14px}
+  .set-field label{display:block;font-size:12px;font-weight:700;color:var(--ink-2);margin-bottom:6px}
+  .set-field-row{display:flex;gap:8px}
+  #set-customurl{
+    flex:1;min-width:0;height:42px;border-radius:12px;border:1.5px solid var(--line);
+    background:var(--bg);color:var(--ink);padding:0 12px;
+    font-family:inherit;font-size:16px;font-weight:500;outline:none;
+    -webkit-user-select:text;user-select:text;
+  }
+  #set-savecustom{
+    height:42px;padding:0 16px;border-radius:12px;border:none;cursor:pointer;
+    background:var(--accent);color:var(--accent-ink);font-size:14px;font-weight:800;
+  }
+  .set-hint{font-size:11px;color:var(--ink-2);font-weight:500;margin-top:6px;line-height:1.4}
 
   @media (prefers-reduced-motion: reduce){
     *,*::before,*::after{animation-duration:.001s !important;transition-duration:.001s !important}
@@ -373,7 +387,7 @@
     <svg viewBox="0 0 24 24"><path d="M4 6h16M4 12h16M4 18h10"/></svg>
     Vicini
   </button>
-  <div id="loader"><div class="spinner"></div><p>Carico i locker…</p></div>
+  <div id="loader"><div class="spinner"></div><p id="loaderText">Carico i locker…</p></div>
   <div id="toast" role="status"></div>
 </div>
 
@@ -420,12 +434,26 @@
     <div class="set-info-row"><span>Versione app</span><b id="set-version"></b></div>
     <div class="set-info-row"><span>Locker caricati</span><b id="set-count"></b></div>
     <div class="set-info-row"><span>Da rete ufficiale InPost</span><b id="set-inpost"></b></div>
+    <div class="set-info-row"><span>Rete InPost scaricata il</span><b id="set-ipdate"></b></div>
     <div class="set-info-row"><span>Ultimo aggiornamento dati</span><b id="set-updated"></b></div>
+    <div class="set-info-row"><span>Da fonte personale</span><b id="set-custom"></b></div>
     <div class="set-info-row"><span>Preferiti salvati</span><b id="set-favs"></b></div>
+  </div>
+  <div class="set-field">
+    <label for="set-customurl">Fonte personale (URL SheetDB / API JSON)</label>
+    <div class="set-field-row">
+      <input id="set-customurl" type="url" placeholder="https://sheetdb.io/api/v1/…" autocomplete="off">
+      <button id="set-savecustom">Salva</button>
+    </div>
+    <div class="set-hint">Foglio con colonne: brand, nome, via, citta, lat, lon, orari — per aggiungere i locker di qualsiasi azienda</div>
   </div>
   <button class="set-btn" id="set-clearcache">
     <svg viewBox="0 0 24 24"><path d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6"/><path d="M10 11v6M14 11v6"/></svg>
     Svuota cache e riscarica i dati
+  </button>
+  <button class="set-btn" id="set-refreship">
+    <svg viewBox="0 0 24 24"><rect x="4" y="4" width="7" height="7" rx="1.5"/><rect x="13" y="4" width="7" height="7" rx="1.5"/><rect x="4" y="13" width="7" height="7" rx="1.5"/><rect x="13" y="13" width="7" height="7" rx="1.5"/></svg>
+    Riscarica la rete InPost ufficiale
   </button>
   <button class="set-btn" id="set-reloadapp">
     <svg viewBox="0 0 24 24"><path d="M21 12a9 9 0 1 1-2.6-6.3"/><path d="M21 3v6h-6"/></svg>
@@ -447,7 +475,7 @@
    Geocoding: Nominatim (OpenStreetMap)
    ============================================================ */
 
-const APP_VERSION = '3.0';
+const APP_VERSION = '3.2';
 const ROME_BBOX = '41.40,11.73,42.30,13.30';
 
 const OVERPASS_ENDPOINTS = [
@@ -600,47 +628,88 @@ function parseElements(elements){
 }
 
 // ----- Fonte ufficiale InPost Italia -----
-// Stessa API pubblica che alimenta la mappa su inpost.it: punti operativi
-// con coordinate, indirizzo e orari. Solo locker (esclusi i punti di ritiro in negozio).
+// L'API pubblica serve 25 punti a pagina (parametri ignorati), ~450 pagine per
+// tutta Italia. Strategia: scansione completa una tantum in parallelo, poi la
+// rete resta salvata sul telefono per 7 giorni. Solo locker con stato "Operating".
+const IP_BASE = 'https://api-it-local-points.easypack24.net/v1/points';
+const IP_CACHE_KEY = 'dexlocker-inpost-v1';
+const IP_TTL = 7 * 24 * 3600 * 1000;   // 7 giorni
+
+async function fetchInPostPage(page){
+  const ctrl = new AbortController();
+  const timer = setTimeout(() => ctrl.abort(), 15000);
+  try{
+    const r = await fetch(`${IP_BASE}?page=${page}`, { signal: ctrl.signal });
+    if (!r.ok) throw new Error('HTTP ' + r.status);
+    return await r.json();
+  }finally{ clearTimeout(timer); }
+}
+
+function ipProgress(done, total){
+  const el = $('loaderText');
+  if (el && $('loader').classList.contains('show')){
+    el.textContent = `Scarico la rete InPost ufficiale: ${Math.round(done/total*100)}% (solo la prima volta)`;
+  }
+}
+
+async function loadInPostNetwork(){
+  // Cache valida? Usala
+  try{
+    const c = JSON.parse(lsGet(IP_CACHE_KEY));
+    const ttl = c && c.partial ? 24 * 3600 * 1000 : IP_TTL;
+    if (c && Array.isArray(c.points) && c.points.length && (Date.now() - c.ts) < ttl) return c.points;
+  }catch(e){}
+
+  // Scansione completa in parallelo
+  const first = await fetchInPostPage(1);
+  const totalPages = first.total_pages || 1;
+  const pages = [first];
+  const queue = []; for (let p = 2; p <= totalPages; p++) queue.push(p);
+  let done = 1, failed = 0;
+
+  async function worker(){
+    while (queue.length){
+      const p = queue.shift();
+      try{ pages.push(await fetchInPostPage(p)); }
+      catch(e1){
+        try{ pages.push(await fetchInPostPage(p)); }   // un tentativo di recupero
+        catch(e2){ failed++; }
+      }
+      done++;
+      if (done % 10 === 0 || done === totalPages) ipProgress(done, totalPages);
+    }
+  }
+  await Promise.all(Array.from({ length: 16 }, worker));
+
+  const points = [];
+  for (const pg of pages) for (const p of (pg.items || [])){
+    if (p.status !== 'Operating') continue;                      // esclude quelli non ancora attivi
+    if (!(p.type || []).includes('parcel_locker')) continue;     // solo locker, non punti in negozio
+    const lat = p.location?.latitude, lon = p.location?.longitude;
+    if (lat == null || lon == null) continue;
+    const ad = p.address_details || {};
+    points.push({
+      id: 'inpost/' + p.name,
+      lat, lon,
+      brand: 'inpost',
+      official: true,
+      tags: {
+        name: p.location_description || p.location_description_2 || ('Locker ' + p.name),
+        ref: p.name,
+        opening_hours: p.location_247 ? '24/7' : '',
+        'addr:street': [ad.street, ad.building_number].filter(Boolean).join(' '),
+        'addr:city': [ad.post_code, ad.city].filter(Boolean).join(' ')
+      }
+    });
+  }
+  lsSet(IP_CACHE_KEY, JSON.stringify({ ts: Date.now(), partial: failed > totalPages * 0.05, points }));
+  return points;
+}
+
 async function fetchInPost(bbox){
   const [s, w, n, e] = bbox.split(',').map(Number);
-  const cLat = (s + n) / 2, cLon = (w + e) / 2;
-  const radius = Math.min(Math.round(haversine({lat:s, lon:w}, {lat:n, lon:e}) / 2), 80000);
-  const out = [];
-  let page = 1, totalPages = 1;
-  do{
-    const ctrl = new AbortController();
-    const timer = setTimeout(() => ctrl.abort(), 20000);
-    try{
-      const url = `https://api-it-local-points.easypack24.net/v1/points?type=parcel_locker&status=Operating&relative_point=${cLat.toFixed(5)},${cLon.toFixed(5)}&max_distance=${radius}&per_page=500&page=${page}`;
-      const r = await fetch(url, { signal: ctrl.signal });
-      if (!r.ok) throw new Error('HTTP ' + r.status);
-      const data = await r.json();
-      for (const p of (data.items || [])){
-        const lat = p.location?.latitude, lon = p.location?.longitude;
-        if (lat == null || lon == null) continue;
-        if (lat < s || lat > n || lon < w || lon > e) continue;   // tieni solo l'area richiesta
-        const ad = p.address_details || {};
-        out.push({
-          id: 'inpost/' + p.name,
-          lat, lon,
-          brand: 'inpost',
-          official: true,
-          tags: {
-            name: p.display_name || ('InPost Locker ' + p.name),
-            ref: p.name,
-            opening_hours: p.location_247 ? '24/7' : (p.opening_hours || ''),
-            'addr:street': [ad.street, ad.building_number].filter(Boolean).join(' ') || (p.address?.line1 || ''),
-            'addr:city': ad.city || '',
-            note: p.location_description || ''
-          }
-        });
-      }
-      totalPages = data.total_pages || 1;
-    }finally{ clearTimeout(timer); }
-    page++;
-  }while(page <= totalPages && page <= 12);
-  return out;
+  const all = await loadInPostNetwork();
+  return all.filter(p => p.lat >= s && p.lat <= n && p.lon >= w && p.lon <= e);
 }
 
 // Fusione fonti: se un locker InPost di OSM è a <60 m da un punto ufficiale,
@@ -649,6 +718,52 @@ function mergeSources(osm, official){
   if (!official.length) return osm;
   const kept = osm.filter(o => o.brand !== 'inpost' || !official.some(f => haversine(o, f) < 60));
   return kept.concat(official);
+}
+
+// ----- Fonte personale (Google Sheet via SheetDB o simili) -----
+// Un foglio con colonne: brand, nome, via, citta, lat, lon, orari
+// permette di aggiungere i locker di QUALSIASI azienda non coperta dalle API.
+const CUSTOM_URL_KEY = 'dexlocker-customurl';
+
+async function fetchCustom(bbox){
+  const url = (lsGet(CUSTOM_URL_KEY) || '').trim();
+  if (!url) return [];
+  const [s, w, n, e] = bbox.split(',').map(Number);
+  const ctrl = new AbortController();
+  const timer = setTimeout(() => ctrl.abort(), 15000);
+  try{
+    const r = await fetch(url, { signal: ctrl.signal });
+    if (!r.ok) throw new Error('HTTP ' + r.status);
+    const data = await r.json();
+    const rows = Array.isArray(data) ? data : (data.data || []);   // SheetDB può incapsulare in {data:[...]}
+    const out = [];
+    rows.forEach((row, i) => {
+      const lat = parseFloat(String(row.lat ?? row.latitudine ?? '').replace(',', '.'));
+      const lon = parseFloat(String(row.lon ?? row.lng ?? row.longitudine ?? '').replace(',', '.'));
+      if (!isFinite(lat) || !isFinite(lon)) return;
+      if (lat < s || lat > n || lon < w || lon > e) return;
+      const brand = detectBrand({ brand: String(row.brand || row.azienda || '') });
+      out.push({
+        id: 'custom/' + i,
+        lat, lon, brand,
+        custom: true,
+        tags: {
+          name: row.nome || row.name || (BRANDS[brand].name + ' (fonte personale)'),
+          'addr:street': row.via || row.indirizzo || '',
+          'addr:city': row.citta || row['città'] || row.city || '',
+          opening_hours: row.orari || row.opening_hours || ''
+        }
+      });
+    });
+    return out;
+  }finally{ clearTimeout(timer); }
+}
+
+// I punti personali si aggiungono solo se non duplicano un punto già noto (<40 m, stesso brand)
+function mergeCustom(base, custom){
+  if (!custom.length) return base;
+  const extra = custom.filter(c => !base.some(b => b.brand === c.brand && haversine(b, c) < 40));
+  return base.concat(extra);
 }
 
 // ----- Cache locale: avvio istantaneo e offline -----
@@ -664,17 +779,22 @@ async function load(bbox, label){
   $('btnReload').classList.add('spin');
   try{
     const isProvince = bbox === ROME_BBOX;
-    // Le due fonti viaggiano in parallelo: se una fallisce, basta l'altra
-    const [osmRes, ipRes] = await Promise.allSettled([
+    // Le tre fonti viaggiano in parallelo: se una fallisce, bastano le altre
+    const [osmRes, ipRes, cuRes] = await Promise.allSettled([
       fetchLockers(bbox, isProvince ? 20 : 0),
-      fetchInPost(bbox)
+      fetchInPost(bbox),
+      fetchCustom(bbox)
     ]);
     const osm      = osmRes.status === 'fulfilled' ? parseElements(osmRes.value) : [];
     const official = ipRes.status === 'fulfilled' ? ipRes.value : [];
-    if (osmRes.status !== 'fulfilled' && !official.length){
+    const custom   = cuRes.status === 'fulfilled' ? cuRes.value : [];
+    if (cuRes.status !== 'fulfilled' && (lsGet(CUSTOM_URL_KEY) || '').trim()){
+      toast('Fonte personale non raggiungibile: controlla l\'URL in ⚙️', 3500);
+    }
+    if (osmRes.status !== 'fulfilled' && !official.length && !custom.length){
       throw (osmRes.reason || new Error('Nessuna fonte dati raggiungibile'));
     }
-    const fresh = mergeSources(osm, official);
+    const fresh = mergeCustom(mergeSources(osm, official), custom);
     // Non sostituire dati buoni con un risultato peggiore (una fonte momentaneamente giù)
     if (loadedOnce && fresh.length < lockers.length * 0.5){
       toast('Una fonte dati è momentaneamente giù: tengo i dati già caricati', 3500);
@@ -831,6 +951,7 @@ function openSheet(lk){
   if (t.covered === 'yes' || t.indoor === 'yes') rows.push({ icon:'<path d="M3 11l9-7 9 7"/><path d="M5 10v10h14V10"/>', text:'Al coperto' });
   if (t.note) rows.push({ icon:'<path d="M12 8v5M12 16.5v.5"/><circle cx="12" cy="12" r="9"/>', text: t.note });
   if (lk.official) rows.push({ icon:'<path d="M20 6L9 17l-5-5"/>', text:'Dato ufficiale InPost' });
+  if (lk.custom) rows.push({ icon:'<path d="M4 4h16v16H4z"/><path d="M4 9h16M9 9v11"/>', text:'Dalla tua fonte personale' });
   $('sh-rows').innerHTML = rows.map(r =>
     `<div class="sh-row"><svg viewBox="0 0 24 24">${r.icon}</svg><span>${r.text}</span></div>`
   ).join('');
@@ -1027,11 +1148,29 @@ function openSettings(){
     ? new Date(c.ts).toLocaleString('it-IT', { day:'2-digit', month:'2-digit', hour:'2-digit', minute:'2-digit' })
     : '—';
   $('set-favs').textContent = favs.size;
+  $('set-custom').textContent = lockers.filter(l => l.custom).length.toLocaleString('it-IT');
+  $('set-customurl').value = lsGet(CUSTOM_URL_KEY) || '';
+  try{
+    const ip = JSON.parse(lsGet(IP_CACHE_KEY));
+    $('set-ipdate').textContent = ip?.ts
+      ? new Date(ip.ts).toLocaleString('it-IT', { day:'2-digit', month:'2-digit', hour:'2-digit', minute:'2-digit' })
+      : '—';
+  }catch(e){ $('set-ipdate').textContent = '—'; }
   closePanels();
   $('settingsPanel').classList.add('show');
   $('backdrop').classList.add('show');
 }
 $('btnSettings').onclick = openSettings;
+
+$('set-savecustom').onclick = () => {
+  const url = $('set-customurl').value.trim();
+  if (url && !/^https:\/\//.test(url)){ toast('L\'URL deve iniziare con https://'); return; }
+  lsSet(CUSTOM_URL_KEY, url);
+  try{ localStorage.removeItem(CACHE_KEY); }catch(e){}
+  closePanels();
+  toast(url ? 'Fonte personale salvata: ricarico i dati…' : 'Fonte personale rimossa');
+  load(ROME_BBOX, 'Roma e provincia');
+};
 
 $('set-clearcache').onclick = () => {
   try{ localStorage.removeItem(CACHE_KEY); }catch(e){}
@@ -1041,6 +1180,18 @@ $('set-clearcache').onclick = () => {
   renderChips();
   closePanels();
   toast('Cache svuotata: riscarico i dati…');
+  load(ROME_BBOX, 'Roma e provincia');
+};
+
+$('set-refreship').onclick = () => {
+  try{ localStorage.removeItem(IP_CACHE_KEY); }catch(e){}
+  try{ localStorage.removeItem(CACHE_KEY); }catch(e){}
+  lockers = [];
+  loadedOnce = false;         // mostra il loader con l'avanzamento della scansione
+  cluster.clearLayers();
+  renderChips();
+  closePanels();
+  $('loaderText').textContent = 'Scarico la rete InPost ufficiale…';
   load(ROME_BBOX, 'Roma e provincia');
 };
 
