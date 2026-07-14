@@ -285,6 +285,28 @@
   .lp-dist{font-size:13px;font-weight:800;flex-shrink:0}
   .lp-empty{padding:26px 0;text-align:center;color:var(--ink-2);font-size:14px;font-weight:500}
 
+  /* Impostazioni */
+  #setTitle{font-size:17px;font-weight:800;letter-spacing:-.02em;margin-bottom:12px;display:flex;align-items:center;gap:8px}
+  .set-info{
+    background:var(--bg);border:1.5px solid var(--line);border-radius:14px;
+    padding:12px 14px;margin-bottom:14px;
+  }
+  .set-info-row{
+    display:flex;justify-content:space-between;gap:12px;
+    font-size:13px;font-weight:500;color:var(--ink-2);padding:4px 0;
+  }
+  .set-info-row b{color:var(--ink);font-weight:700;text-align:right}
+  .set-btn{
+    width:100%;padding:14px;border-radius:14px;cursor:pointer;margin-bottom:10px;
+    border:1.5px solid var(--line);background:var(--surface);color:var(--ink);
+    font-size:14px;font-weight:700;
+    display:flex;align-items:center;justify-content:center;gap:9px;
+  }
+  .set-btn:active{transform:scale(.97)}
+  .set-btn svg{width:17px;height:17px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+  .set-btn.danger{color:var(--danger);border-color:color-mix(in srgb, var(--danger) 40%, var(--line))}
+  .set-note{font-size:11px;color:var(--ink-2);font-weight:500;text-align:center;margin-top:4px}
+
   @media (prefers-reduced-motion: reduce){
     *,*::before,*::after{animation-duration:.001s !important;transition-duration:.001s !important}
   }
@@ -320,6 +342,9 @@
     </button>
     <button class="icon-btn" id="btnReload" title="Aggiorna dati" aria-label="Aggiorna dati">
       <svg viewBox="0 0 24 24"><path d="M21 12a9 9 0 1 1-2.6-6.3"/><path d="M21 3v6h-6"/></svg>
+    </button>
+    <button class="icon-btn" id="btnSettings" title="Impostazioni" aria-label="Impostazioni">
+      <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .34 1.87l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.7 1.7 0 0 0-1.87-.34 1.7 1.7 0 0 0-1.03 1.56V21a2 2 0 1 1-4 0v-.09a1.7 1.7 0 0 0-1.11-1.56 1.7 1.7 0 0 0-1.87.34l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.7 1.7 0 0 0 .34-1.87 1.7 1.7 0 0 0-1.56-1.03H3a2 2 0 1 1 0-4h.09a1.7 1.7 0 0 0 1.56-1.11 1.7 1.7 0 0 0-.34-1.87l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.7 1.7 0 0 0 1.87.34h.01A1.7 1.7 0 0 0 10 3.09V3a2 2 0 1 1 4 0v.09a1.7 1.7 0 0 0 1.03 1.56 1.7 1.7 0 0 0 1.87-.34l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.7 1.7 0 0 0-.34 1.87v.01A1.7 1.7 0 0 0 20.91 10H21a2 2 0 1 1 0 4h-.09a1.7 1.7 0 0 0-1.51 1z"/></svg>
     </button>
   </div>
 </header>
@@ -387,6 +412,31 @@
   <div id="listRows"></div>
 </div>
 
+<!-- Impostazioni -->
+<div id="settingsPanel" class="panel" role="dialog" aria-modal="true">
+  <div class="grab"></div>
+  <div id="setTitle">⚙️ Impostazioni</div>
+  <div class="set-info">
+    <div class="set-info-row"><span>Versione app</span><b id="set-version"></b></div>
+    <div class="set-info-row"><span>Locker caricati</span><b id="set-count"></b></div>
+    <div class="set-info-row"><span>Ultimo aggiornamento dati</span><b id="set-updated"></b></div>
+    <div class="set-info-row"><span>Preferiti salvati</span><b id="set-favs"></b></div>
+  </div>
+  <button class="set-btn" id="set-clearcache">
+    <svg viewBox="0 0 24 24"><path d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6"/><path d="M10 11v6M14 11v6"/></svg>
+    Svuota cache e riscarica i dati
+  </button>
+  <button class="set-btn" id="set-reloadapp">
+    <svg viewBox="0 0 24 24"><path d="M21 12a9 9 0 1 1-2.6-6.3"/><path d="M21 3v6h-6"/></svg>
+    Ricarica l'app (aggiorna versione)
+  </button>
+  <button class="set-btn danger" id="set-clearfavs">
+    <svg viewBox="0 0 24 24"><path d="M12 3l2.7 5.6 6.1.9-4.4 4.3 1 6.1-5.4-2.9-5.4 2.9 1-6.1L3.2 9.5l6.1-.9z"/></svg>
+    Cancella tutti i preferiti
+  </button>
+  <div class="set-note">Dati: OpenStreetMap · La cache rende l'avvio istantaneo e permette l'uso offline</div>
+</div>
+
 <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet.markercluster/1.5.3/leaflet.markercluster.min.js"></script>
 <script>
@@ -396,6 +446,7 @@
    Geocoding: Nominatim (OpenStreetMap)
    ============================================================ */
 
+const APP_VERSION = '2.2';
 const ROME_BBOX = '41.40,11.73,42.30,13.30';
 
 const OVERPASS_ENDPOINTS = [
@@ -453,7 +504,7 @@ L.tileLayer(
   isDark
     ? 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png'
     : 'https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png',
-  { attribution:'<b>Dex Locker v2.1</b> | &copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> &copy; CARTO', maxZoom:20 }
+  { attribution:`<b>Dex Locker v${APP_VERSION}</b> | &copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> &copy; CARTO`, maxZoom:20 }
 ).addTo(map);
 
 const cluster = L.markerClusterGroup({
@@ -743,10 +794,11 @@ $('sh-fav').onclick = () => {
 function closePanels(){
   $('sheet').classList.remove('show');
   $('listPanel').classList.remove('show');
+  $('settingsPanel').classList.remove('show');
   $('backdrop').classList.remove('show');
 }
 $('backdrop').onclick = closePanels;
-for (const pid of ['sheet','listPanel']){
+for (const pid of ['sheet','listPanel','settingsPanel']){
   let touchY = null;
   const el = $(pid);
   el.addEventListener('touchstart', e => touchY = e.touches[0].clientY, {passive:true});
@@ -900,6 +952,50 @@ map.on('moveend', () => {
   if (!loadedOnce) return;
   $('btnArea').classList.toggle('show', !romeBounds.contains(map.getCenter()));
 });
+
+// ----- Impostazioni -----
+function openSettings(){
+  $('set-version').textContent = 'v' + APP_VERSION;
+  $('set-count').textContent = lockers.length.toLocaleString('it-IT');
+  const c = cache.get();
+  $('set-updated').textContent = c?.ts
+    ? new Date(c.ts).toLocaleString('it-IT', { day:'2-digit', month:'2-digit', hour:'2-digit', minute:'2-digit' })
+    : '—';
+  $('set-favs').textContent = favs.size;
+  closePanels();
+  $('settingsPanel').classList.add('show');
+  $('backdrop').classList.add('show');
+}
+$('btnSettings').onclick = openSettings;
+
+$('set-clearcache').onclick = () => {
+  try{ localStorage.removeItem(CACHE_KEY); }catch(e){}
+  lockers = [];
+  loadedOnce = false;
+  cluster.clearLayers();
+  renderChips();
+  closePanels();
+  toast('Cache svuotata: riscarico i dati…');
+  load(ROME_BBOX, 'Roma e provincia');
+};
+
+$('set-reloadapp').onclick = () => {
+  // Ricarica forzata aggirando la cache del browser: utile dopo un aggiornamento
+  const u = new URL(location.href);
+  u.searchParams.set('r', Date.now());
+  location.replace(u.toString());
+};
+
+$('set-clearfavs').onclick = () => {
+  if (!favs.size){ toast('Non hai preferiti salvati'); return; }
+  if (!confirm(`Cancellare tutti i ${favs.size} preferiti? L'operazione non si può annullare.`)) return;
+  favs.clear();
+  saveFavs();
+  favOnly = false;
+  renderChips(); renderMarkers();
+  openSettings();   // aggiorna il contatore nel pannello
+  toast('Preferiti cancellati');
+};
 
 // ----- Avvio -----
 const saved = cache.get();
