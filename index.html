@@ -347,16 +347,6 @@
   .set-field{margin-bottom:14px}
   .set-field label{display:block;font-size:12px;font-weight:700;color:var(--ink-2);margin-bottom:6px}
   .set-field-row{display:flex;gap:8px}
-  #set-customurl{
-    flex:1;min-width:0;height:42px;border-radius:12px;border:1.5px solid var(--line);
-    background:var(--bg);color:var(--ink);padding:0 12px;
-    font-family:inherit;font-size:16px;font-weight:500;outline:none;
-    -webkit-user-select:text;user-select:text;
-  }
-  #set-savecustom{
-    height:42px;padding:0 16px;border-radius:12px;border:none;cursor:pointer;
-    background:var(--accent);color:var(--accent-ink);font-size:14px;font-weight:800;
-  }
   .set-hint{font-size:11px;color:var(--ink-2);font-weight:500;margin-top:6px;line-height:1.4}
   .fld-input{
     flex:1;min-width:0;height:42px;border-radius:12px;border:1.5px solid var(--line);
@@ -547,7 +537,6 @@
     <div class="set-info-row"><span>Da rete ufficiale InPost</span><b id="set-inpost"></b></div>
     <div class="set-info-row"><span>Rete InPost scaricata il</span><b id="set-ipdate"></b></div>
     <div class="set-info-row"><span>Ultimo aggiornamento dati</span><b id="set-updated"></b></div>
-    <div class="set-info-row"><span>Da fonte personale</span><b id="set-custom"></b></div>
     <div class="set-info-row"><span>Preferiti salvati</span><b id="set-favs"></b></div>
   </div>
   <div class="set-field">
@@ -561,14 +550,6 @@
       <button class="fld-btn" id="set-sbsave">Salva</button>
     </div>
     <div class="set-hint">I locker proposti con "+" restano in attesa di approvazione (dalla dashboard Supabase) prima di comparire a tutti gli utenti. Guida completa: vedi "guida-supabase.md"</div>
-  </div>
-  <div class="set-field">
-    <label for="set-customurl">Fonte personale extra (URL JSON di sola lettura)</label>
-    <div class="set-field-row">
-      <input id="set-customurl" type="url" placeholder="https://sheetdb.io/api/v1/…" autocomplete="off">
-      <button id="set-savecustom">Salva</button>
-    </div>
-    <div class="set-hint">Foglio o API di sola lettura con colonne: brand, nome, via, citta, lat, lon, orari — per importare i locker di un'azienda specifica</div>
   </div>
   <div class="set-field">
     <label for="set-home">🏠 Casa</label>
@@ -634,7 +615,7 @@
    Geocoding: Nominatim (OpenStreetMap)
    ============================================================ */
 
-const APP_VERSION = '3.5';
+const APP_VERSION = '3.6';
 const ROME_BBOX = '41.40,11.73,42.30,13.30';
 
 const OVERPASS_ENDPOINTS = [
@@ -921,45 +902,6 @@ function mergeSources(osm, official){
   return kept.concat(official);
 }
 
-// ----- Fonte personale (Google Sheet via SheetDB o simili) -----
-// Un foglio con colonne: brand, nome, via, citta, lat, lon, orari
-// permette di aggiungere i locker di QUALSIASI azienda non coperta dalle API.
-const CUSTOM_URL_KEY = 'dexlocker-customurl';
-
-async function fetchCustom(bbox){
-  const url = (lsGet(CUSTOM_URL_KEY) || '').trim();
-  if (!url) return [];
-  const [s, w, n, e] = bbox.split(',').map(Number);
-  const ctrl = new AbortController();
-  const timer = setTimeout(() => ctrl.abort(), 15000);
-  try{
-    const r = await fetch(url, { signal: ctrl.signal });
-    if (!r.ok) throw new Error('HTTP ' + r.status);
-    const data = await r.json();
-    const rows = Array.isArray(data) ? data : (data.data || []);   // SheetDB può incapsulare in {data:[...]}
-    const out = [];
-    rows.forEach((row, i) => {
-      const lat = parseFloat(String(row.lat ?? row.latitudine ?? '').replace(',', '.'));
-      const lon = parseFloat(String(row.lon ?? row.lng ?? row.longitudine ?? '').replace(',', '.'));
-      if (!isFinite(lat) || !isFinite(lon)) return;
-      if (lat < s || lat > n || lon < w || lon > e) return;
-      const brand = detectBrand({ brand: String(row.brand || row.azienda || '') });
-      out.push({
-        id: 'custom/' + i,
-        lat, lon, brand,
-        custom: true,
-        tags: {
-          name: row.nome || row.name || (BRANDS[brand].name + ' (fonte personale)'),
-          'addr:street': row.via || row.indirizzo || '',
-          'addr:city': row.citta || row['città'] || row.city || '',
-          opening_hours: row.orari || row.opening_hours || ''
-        }
-      });
-    });
-    return out;
-  }finally{ clearTimeout(timer); }
-}
-
 // I punti personali si aggiungono solo se non duplicano un punto già noto (<40 m, stesso brand)
 function mergeCustom(base, custom){
   if (!custom.length) return base;
@@ -1147,23 +1089,18 @@ async function load(bbox, label){
   try{
     const isProvince = bbox === ROME_BBOX;
     // Le fonti viaggiano in parallelo: se una fallisce, bastano le altre
-    const [osmRes, ipRes, cuRes, sbRes] = await Promise.allSettled([
+    const [osmRes, ipRes, sbRes] = await Promise.allSettled([
       fetchLockers(bbox, isProvince ? 20 : 0),
       fetchInPost(bbox),
-      fetchCustom(bbox),
       fetchSupabaseApproved(bbox)
     ]);
     const osm      = osmRes.status === 'fulfilled' ? parseElements(osmRes.value) : [];
     const official = ipRes.status === 'fulfilled' ? ipRes.value : [];
-    const custom   = cuRes.status === 'fulfilled' ? cuRes.value : [];
     const community = sbRes.status === 'fulfilled' ? sbRes.value : [];
-    if (cuRes.status !== 'fulfilled' && (lsGet(CUSTOM_URL_KEY) || '').trim()){
-      toast('Fonte personale non raggiungibile: controlla l\'URL in ⚙️', 3500);
-    }
-    if (osmRes.status !== 'fulfilled' && !official.length && !custom.length && !community.length){
+    if (osmRes.status !== 'fulfilled' && !official.length && !community.length){
       throw (osmRes.reason || new Error('Nessuna fonte dati raggiungibile'));
     }
-    const fresh = mergeCustom(mergeCustom(mergeCustom(mergeSources(osm, official), custom), community), fetchLocalAdded(bbox));
+    const fresh = mergeCustom(mergeCustom(mergeSources(osm, official), community), fetchLocalAdded(bbox));
     // Non sostituire dati buoni con un risultato peggiore (una fonte momentaneamente giù)
     if (loadedOnce && fresh.length < lockers.length * 0.5){
       toast('Una fonte dati è momentaneamente giù: tengo i dati già caricati', 3500);
@@ -1547,8 +1484,6 @@ function openSettings(){
     ? new Date(c.ts).toLocaleString('it-IT', { day:'2-digit', month:'2-digit', hour:'2-digit', minute:'2-digit' })
     : '—';
   $('set-favs').textContent = favs.size;
-  $('set-custom').textContent = lockers.filter(l => l.custom).length.toLocaleString('it-IT');
-  $('set-customurl').value = lsGet(CUSTOM_URL_KEY) || '';
   $('set-sburl').value = lsGet(SB_URL_KEY) || '';
   $('set-sbkey').value = lsGet(SB_KEY_KEY) || '';
   for (const k in PLACES){
@@ -1610,16 +1545,6 @@ for (const k in PLACES){
     );
   };
 }
-
-$('set-savecustom').onclick = () => {
-  const url = $('set-customurl').value.trim();
-  if (url && !/^https:\/\//.test(url)){ toast('L\'URL deve iniziare con https://'); return; }
-  lsSet(CUSTOM_URL_KEY, url);
-  try{ localStorage.removeItem(CACHE_KEY); }catch(e){}
-  closePanels();
-  toast(url ? 'Fonte personale salvata: ricarico i dati…' : 'Fonte personale rimossa');
-  load(ROME_BBOX, 'Roma e provincia');
-};
 
 $('set-clearcache').onclick = () => {
   try{ localStorage.removeItem(CACHE_KEY); }catch(e){}
