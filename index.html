@@ -1,36 +1,1935 @@
--- Da eseguire in Supabase → SQL Editor
--- Aggiunge SOLO le tabelle nuove per commenti e foto.
--- Non tocca la tabella "lockers", che hai già creato in precedenza.
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Dex Locker">
+<meta name="theme-color" content="#12151C">
+<title>Dex Locker</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='22' fill='%23FFC400'/><rect x='16' y='16' width='30' height='28' rx='7' fill='%2312151C'/><rect x='54' y='16' width='30' height='28' rx='7' fill='%2312151C'/><rect x='16' y='54' width='30' height='28' rx='7' fill='%2312151C'/><rect x='54' y='54' width='30' height='28' rx='7' fill='%23D22730'/></svg>">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet.markercluster/1.5.3/MarkerCluster.min.css">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#F6F5F1;
+    --surface:#FFFFFF;
+    --ink:#171A21;
+    --ink-2:#5C6270;
+    --line:#E4E2DA;
+    --accent:#FFC400;
+    --accent-ink:#171A21;
+    --danger:#D22730;
+    --shadow:0 8px 28px rgba(20,22,30,.14);
+    --chip-bg:#FFFFFF;
+  }
+  @media (prefers-color-scheme: dark){
+    :root{
+      --bg:#12151C;
+      --surface:#1B1F29;
+      --ink:#F2F3F5;
+      --ink-2:#9AA1B0;
+      --line:#2A2F3C;
+      --chip-bg:#1B1F29;
+      --shadow:0 8px 28px rgba(0,0,0,.5);
+    }
+  }
+  *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+  html,body{height:100%;-webkit-text-size-adjust:100%}
+  body{
+    font-family:'Archivo',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
+    background:var(--bg);color:var(--ink);
+    display:flex;flex-direction:column;
+    overflow:hidden;
+    height:100dvh;
+    overscroll-behavior:none;
+    touch-action:manipulation;
+    -webkit-user-select:none;user-select:none;
+    padding-top:env(safe-area-inset-top);
+  }
+  #sheet, #sheet *{-webkit-user-select:text;user-select:text}
+  button{font-family:inherit}
 
--- Commenti degli utenti sui locker (es. "pieno", "fuori servizio", "ottima posizione")
-create table comments (
-  id bigint generated always as identity primary key,
-  locker_id text not null,      -- id del locker nell'app (es. "way/123456", "inpost/ITABB0123")
-  autore text,                  -- nome facoltativo di chi scrive
-  testo text,
-  foto_url text,                -- link alla foto, se presente
-  status text not null default 'pending',
-  created_at timestamptz not null default now()
-);
+  /* ---------- Header ---------- */
+  header{
+    display:flex;align-items:center;justify-content:space-between;
+    padding:12px 16px 8px;gap:12px;flex-shrink:0;
+  }
+  .brand{display:flex;align-items:center;gap:10px;min-width:0}
+  .logo{
+    width:40px;height:40px;border-radius:12px;flex-shrink:0;
+    background:var(--accent);
+    display:flex;align-items:center;justify-content:center;
+    box-shadow:inset 0 -3px 0 rgba(0,0,0,.15);
+  }
+  h1{font-size:18px;font-weight:800;letter-spacing:-.02em;line-height:1.1}
+  h1 em{font-style:normal;color:var(--accent);-webkit-text-stroke:.4px var(--ink)}
+  @media (prefers-color-scheme: dark){ h1 em{-webkit-text-stroke:0} }
+  #subtitle{font-size:12px;color:var(--ink-2);font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .actions{display:flex;gap:8px;flex-shrink:0}
+  .icon-btn{
+    width:40px;height:40px;border-radius:12px;border:1.5px solid var(--line);
+    background:var(--surface);color:var(--ink);cursor:pointer;
+    display:flex;align-items:center;justify-content:center;
+    transition:transform .12s ease;flex-shrink:0;
+  }
+  .icon-btn:active{transform:scale(.92)}
+  .icon-btn svg{width:19px;height:19px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+  .icon-btn.spin svg{animation:rot 1s linear infinite}
+  @keyframes rot{to{transform:rotate(360deg)}}
 
-alter table comments enable row level security;
+  /* ---------- Ricerca ---------- */
+  #searchwrap{padding:0 16px 8px;position:relative;flex-shrink:0;z-index:1200}
+  #searchForm{display:flex;gap:8px}
+  .search-box{
+    flex:1;display:flex;align-items:center;gap:9px;
+    height:42px;border-radius:12px;border:1.5px solid var(--line);
+    background:var(--surface);padding:0 12px;
+  }
+  .search-box svg{width:17px;height:17px;stroke:var(--ink-2);fill:none;stroke-width:2;stroke-linecap:round;flex-shrink:0}
+  #searchInput{
+    flex:1;border:none;outline:none;background:transparent;color:var(--ink);
+    font-family:inherit;font-size:16px;font-weight:500;min-width:0;
+    -webkit-user-select:text;user-select:text;
+  }
+  #searchInput::placeholder{color:var(--ink-2)}
+  #searchClear{display:none;border:none;background:var(--line);color:var(--ink-2);
+    width:22px;height:22px;border-radius:50%;font-size:13px;font-weight:700;cursor:pointer;flex-shrink:0}
+  #searchClear.show{display:block}
+  #searchGo{
+    height:42px;padding:0 16px;border-radius:12px;border:none;cursor:pointer;
+    background:var(--accent);color:var(--accent-ink);font-size:14px;font-weight:800;
+  }
+  #searchGo:active{transform:scale(.95)}
+  #searchResults{
+    position:absolute;left:16px;right:16px;top:46px;z-index:1300;
+    background:var(--surface);border:1.5px solid var(--line);border-radius:14px;
+    box-shadow:var(--shadow);overflow:hidden;display:none;
+  }
+  #searchResults.show{display:block}
+  .sr-item{
+    padding:12px 14px;font-size:14px;font-weight:600;cursor:pointer;
+    border-bottom:1px solid var(--line);display:flex;gap:10px;align-items:flex-start;
+  }
+  .sr-item:last-child{border-bottom:none}
+  .sr-item:active{background:var(--bg)}
+  .sr-item svg{width:15px;height:15px;stroke:var(--accent);fill:none;stroke-width:2.5;flex-shrink:0;margin-top:2px}
+  .sr-item .sub{display:block;font-size:12px;font-weight:500;color:var(--ink-2);margin-top:2px}
+  .sr-item.muted{color:var(--ink-2);cursor:default}
 
-create policy "leggi solo commenti approvati"
-on comments for select
-using (status = 'approved');
+  /* ---------- Filtri brand ---------- */
+  #chips{
+    display:flex;gap:8px;overflow-x:auto;padding:2px 16px 12px;flex-shrink:0;
+    scrollbar-width:none;
+    -webkit-overflow-scrolling:touch;
+  }
+  #chips::-webkit-scrollbar{display:none}
+  .chip{
+    display:flex;align-items:center;gap:7px;white-space:nowrap;
+    padding:8px 13px;border-radius:999px;cursor:pointer;
+    border:1.5px solid var(--line);background:var(--chip-bg);color:var(--ink);
+    font-size:13px;font-weight:600;
+    transition:opacity .15s ease, transform .12s ease;
+  }
+  .chip:active{transform:scale(.95)}
+  .chip .dot{width:10px;height:10px;border-radius:50%;flex-shrink:0}
+  .chip .n{font-size:11px;font-weight:700;color:var(--ink-2)}
+  .chip.off{opacity:.38}
+  .chip.all{border-color:var(--ink);font-weight:700}
+  .chip.fav{font-weight:700}
+  .chip.fav.on{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+  .chip.fav.on .n{color:var(--accent-ink);opacity:.7}
 
-create policy "chiunque può commentare"
-on comments for insert
-with check (status = 'pending');
+  /* ---------- Mappa ---------- */
+  #mapwrap{position:relative;flex:1;min-height:0}
+  #map{position:absolute;inset:0;background:var(--bg)}
+  .leaflet-control-attribution{font-size:9px !important;opacity:.75}
 
--- Archivio foto: bucket pubblico per le immagini caricate dagli utenti
-insert into storage.buckets (id, name, public)
-values ('locker-photos', 'locker-photos', true);
+  .pin{
+    width:28px;height:28px;border-radius:50% 50% 50% 4px;
+    display:flex;align-items:center;justify-content:center;
+    font-size:12px;font-weight:800;
+    border:2.5px solid #fff;box-shadow:0 2px 8px rgba(0,0,0,.35);
+    transform:rotate(-45deg);
+  }
+  .pin span{transform:rotate(45deg)}
+  .pin.searched{background:var(--ink);color:var(--accent);border-color:var(--accent)}
+  .cluster{
+    background:var(--ink);color:var(--bg);
+    border-radius:50%;display:flex;align-items:center;justify-content:center;
+    font-weight:800;font-size:12px;
+    border:3px solid var(--accent);box-shadow:0 3px 10px rgba(0,0,0,.35);
+  }
+  .me-dot{
+    width:18px;height:18px;border-radius:50%;background:#2E7CF6;
+    border:3px solid #fff;box-shadow:0 0 0 6px rgba(46,124,246,.25);
+    animation:pulse 2s ease infinite;
+  }
+  @keyframes pulse{0%,100%{box-shadow:0 0 0 5px rgba(46,124,246,.3)}50%{box-shadow:0 0 0 12px rgba(46,124,246,.08)}}
 
-create policy "chiunque può caricare una foto"
-on storage.objects for insert
-with check (bucket_id = 'locker-photos');
+  #btnArea{
+    position:absolute;top:12px;left:50%;transform:translateX(-50%);z-index:800;
+    padding:10px 18px;border-radius:999px;border:none;cursor:pointer;
+    background:var(--ink);color:var(--bg);font-size:13px;font-weight:700;
+    box-shadow:var(--shadow);display:none;align-items:center;gap:7px;
+  }
+  #btnArea.show{display:flex}
+  #btnArea:active{transform:translateX(-50%) scale(.95)}
 
-create policy "foto sempre visibili (il commento resta comunque moderato)"
-on storage.objects for select
-using (bucket_id = 'locker-photos');
+  #btnList{
+    position:absolute;bottom:calc(20px + env(safe-area-inset-bottom));left:14px;z-index:800;
+    height:46px;padding:0 18px;border-radius:999px;border:none;cursor:pointer;
+    background:var(--ink);color:var(--bg);font-size:14px;font-weight:800;
+    box-shadow:var(--shadow);display:flex;align-items:center;gap:9px;
+  }
+  #btnList:active{transform:scale(.95)}
+  #btnList svg{width:17px;height:17px;stroke:var(--accent);fill:none;stroke-width:2.5;stroke-linecap:round}
+
+  #btnAdd{
+    position:absolute;bottom:calc(20px + env(safe-area-inset-bottom));right:14px;z-index:800;
+    width:52px;height:52px;border-radius:50%;border:none;cursor:pointer;
+    background:var(--accent);color:var(--accent-ink);
+    box-shadow:var(--shadow);display:flex;align-items:center;justify-content:center;
+  }
+  #btnAdd:active{transform:scale(.92)}
+  #btnAdd svg{width:24px;height:24px;stroke:currentColor;fill:none;stroke-width:2.6;stroke-linecap:round}
+
+  /* Modalità posizionamento (mirino stile Waze) */
+  #crosshair{
+    position:absolute;top:50%;left:50%;transform:translate(-50%,-100%);
+    z-index:850;display:none;pointer-events:none;
+    filter:drop-shadow(0 3px 8px rgba(0,0,0,.4));
+  }
+  #crosshair.show{display:block}
+  #crosshair .stem{width:3px;height:14px;background:var(--accent);margin:0 auto}
+  #crosshair .head{
+    width:34px;height:34px;border-radius:50% 50% 50% 4px;transform:rotate(-45deg);
+    background:var(--accent);border:3px solid #fff;
+    display:flex;align-items:center;justify-content:center;
+  }
+  #crosshair .head span{transform:rotate(45deg);font-size:15px}
+
+  #placeBar{
+    position:absolute;top:12px;left:50%;transform:translateX(-50%);z-index:800;
+    display:none;align-items:center;gap:10px;
+    background:var(--ink);color:var(--bg);padding:9px 10px 9px 16px;border-radius:999px;
+    box-shadow:var(--shadow);font-size:13px;font-weight:700;
+  }
+  #placeBar.show{display:flex}
+  #placeBar button{
+    border:none;border-radius:999px;cursor:pointer;font-family:inherit;font-weight:800;font-size:13px;
+    height:34px;padding:0 16px;
+  }
+  #placeBar .go{background:var(--accent);color:var(--accent-ink)}
+  #placeBar .cancel{background:transparent;color:var(--bg);opacity:.7}
+
+  #loader{
+    position:absolute;inset:0;z-index:900;display:none;
+    align-items:center;justify-content:center;flex-direction:column;gap:14px;
+    background:color-mix(in srgb, var(--bg) 65%, transparent);
+    backdrop-filter:blur(3px);
+  }
+  #loader.show{display:flex}
+  .spinner{
+    width:44px;height:44px;border-radius:50%;
+    border:4px solid var(--line);border-top-color:var(--accent);
+    animation:rot .8s linear infinite;
+  }
+  #loader p{font-size:13px;font-weight:600;color:var(--ink-2)}
+
+  #toast{
+    position:absolute;bottom:calc(80px + env(safe-area-inset-bottom));left:50%;
+    transform:translateX(-50%) translateY(20px);z-index:950;
+    background:var(--ink);color:var(--bg);
+    padding:11px 18px;border-radius:12px;font-size:13px;font-weight:600;
+    box-shadow:var(--shadow);opacity:0;pointer-events:none;
+    transition:opacity .25s ease, transform .25s ease;
+    max-width:86%;text-align:center;
+  }
+  #toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+
+  /* ---------- Pannelli (sheet dettaglio + lista vicini + impostazioni) ---------- */
+  #backdrop{
+    position:fixed;inset:0;z-index:1000;background:rgba(10,12,18,.4);
+    opacity:0;pointer-events:none;transition:opacity .25s ease;
+  }
+  #backdrop.show{opacity:1;pointer-events:auto}
+  .panel{
+    position:fixed;left:0;right:0;bottom:0;z-index:1001;
+    background:var(--surface);border-radius:22px 22px 0 0;
+    box-shadow:0 -10px 40px rgba(0,0,0,.3);
+    padding:10px 20px calc(22px + env(safe-area-inset-bottom));
+    transform:translateY(105%);transition:transform .3s cubic-bezier(.32,.72,.28,1);
+    /* Mai più alto dello schermo visibile: resta sempre sotto la barra del browser
+       e, se il contenuto è lungo, scorre internamente invece di essere tagliato */
+    max-height:min(88dvh, calc(100dvh - env(safe-area-inset-top) - 28px));
+    overflow-y:auto;
+    -webkit-overflow-scrolling:touch;
+    overscroll-behavior:contain;
+  }
+  .panel.show{transform:translateY(0)}
+  .grab{width:40px;height:4px;border-radius:2px;background:var(--line);margin:2px auto 14px}
+
+  /* Sheet dettaglio */
+  #sheet{border-top:5px solid var(--accent)}
+  .sh-brand{
+    display:inline-flex;align-items:center;gap:7px;
+    padding:5px 11px;border-radius:999px;font-size:12px;font-weight:700;
+    margin-bottom:10px;
+  }
+  .sh-brand .dot{width:9px;height:9px;border-radius:50%}
+  .sh-titlerow{display:flex;align-items:flex-start;gap:12px;justify-content:space-between}
+  #sh-title{font-size:19px;font-weight:800;letter-spacing:-.02em;margin-bottom:4px;flex:1}
+  #sh-fav{
+    width:42px;height:42px;border-radius:12px;border:1.5px solid var(--line);
+    background:var(--surface);cursor:pointer;flex-shrink:0;
+    display:flex;align-items:center;justify-content:center;
+  }
+  #sh-fav svg{width:22px;height:22px;stroke:var(--ink-2);fill:none;stroke-width:2;stroke-linejoin:round}
+  #sh-fav.on{border-color:var(--accent);background:var(--accent)}
+  #sh-fav.on svg{stroke:var(--accent-ink);fill:var(--accent-ink)}
+  #sh-fav:active{transform:scale(.92)}
+  #sh-addr{font-size:14px;color:var(--ink-2);font-weight:500;line-height:1.45}
+  #sh-dist{font-size:13px;font-weight:800;color:var(--ink);margin-top:6px;display:none;line-height:1.6}
+  #sh-dist.show{display:block}
+  .sh-rows{margin:14px 0 18px;display:flex;flex-direction:column;gap:8px}
+  .sh-row{display:flex;gap:9px;align-items:flex-start;font-size:13px;font-weight:500;color:var(--ink)}
+  .sh-row svg{width:16px;height:16px;stroke:var(--ink-2);fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;flex-shrink:0;margin-top:1px}
+  .sh-btns{display:flex;gap:10px}
+  .sh-btn{
+    flex:1;padding:14px;border-radius:14px;border:none;cursor:pointer;
+    font-size:14px;font-weight:700;text-align:center;text-decoration:none;
+    display:flex;align-items:center;justify-content:center;gap:8px;
+  }
+  .sh-btn:active{transform:scale(.97)}
+  .sh-btn.primary{background:var(--accent);color:var(--accent-ink)}
+  .sh-btn.secondary{background:var(--bg);color:var(--ink);border:1.5px solid var(--line)}
+  .sh-btn svg{width:17px;height:17px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+
+  /* Commenti e foto sul locker */
+  .cm-title{
+    font-size:13px;font-weight:800;color:var(--ink-2);text-transform:uppercase;letter-spacing:.03em;
+    margin:20px 0 10px;
+  }
+  #cm-list{display:flex;flex-direction:column;gap:10px;margin-bottom:12px}
+  .cm-item{
+    background:var(--bg);border:1.5px solid var(--line);border-radius:14px;padding:11px 13px;
+  }
+  .cm-item.pending{border-style:dashed;opacity:.8}
+  .cm-head{display:flex;justify-content:space-between;gap:8px;margin-bottom:5px}
+  .cm-author{font-size:12px;font-weight:800;color:var(--ink)}
+  .cm-time{font-size:11px;font-weight:600;color:var(--ink-2);flex-shrink:0}
+  .cm-text{font-size:13px;font-weight:500;color:var(--ink);line-height:1.45;white-space:pre-wrap}
+  .cm-photo{
+    width:100%;max-height:220px;object-fit:cover;border-radius:10px;margin-top:8px;
+    display:block;cursor:pointer;
+  }
+  .cm-pending-tag{font-size:10px;font-weight:800;color:var(--accent-ink);background:var(--accent);
+    padding:2px 8px;border-radius:999px;display:inline-block;margin-bottom:5px}
+  .cm-empty{font-size:13px;color:var(--ink-2);font-weight:500;padding:6px 2px}
+
+  #cm-form{
+    display:none;background:var(--bg);border:1.5px solid var(--line);border-radius:14px;
+    padding:13px;margin-bottom:12px;
+  }
+  #cm-form.show{display:block}
+  #cm-text{
+    width:100%;min-height:70px;border-radius:10px;border:1.5px solid var(--line);
+    background:var(--surface);color:var(--ink);padding:10px 12px;resize:vertical;
+    font-family:inherit;font-size:15px;font-weight:500;outline:none;margin-bottom:8px;
+    -webkit-user-select:text;user-select:text;
+  }
+  #cm-name{
+    width:100%;height:40px;border-radius:10px;border:1.5px solid var(--line);
+    background:var(--surface);color:var(--ink);padding:0 12px;
+    font-family:inherit;font-size:15px;font-weight:500;outline:none;margin-bottom:8px;
+    -webkit-user-select:text;user-select:text;
+  }
+  .cm-photo-row{display:flex;align-items:center;gap:10px;margin-bottom:10px}
+  #cm-photo-label{
+    display:flex;align-items:center;gap:7px;padding:9px 13px;border-radius:10px;cursor:pointer;
+    border:1.5px solid var(--line);background:var(--surface);color:var(--ink);font-size:13px;font-weight:700;
+  }
+  #cm-photo-label svg{width:16px;height:16px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+  #cm-photo-name{font-size:12px;color:var(--ink-2);font-weight:600;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  #cm-photo-input{display:none}
+  .cm-form-btns{display:flex;gap:8px}
+  .cm-form-btns button{
+    flex:1;padding:11px;border-radius:10px;border:none;cursor:pointer;
+    font-family:inherit;font-size:13px;font-weight:800;
+  }
+  #cm-cancel{background:var(--surface);color:var(--ink);border:1.5px solid var(--line) !important}
+  #cm-send{background:var(--accent);color:var(--accent-ink)}
+  #cm-send:disabled{opacity:.5}
+
+  /* Lista vicini */
+  #listTitle{font-size:17px;font-weight:800;letter-spacing:-.02em}
+  #listRef{font-size:12px;color:var(--ink-2);font-weight:500;margin:2px 0 8px}
+  #listRows{}
+  .lp-row{
+    display:flex;align-items:center;gap:12px;padding:13px 2px;
+    border-bottom:1px solid var(--line);cursor:pointer;
+  }
+  .lp-row:last-child{border-bottom:none}
+  .lp-row:active{background:var(--bg)}
+  .lp-dot{width:12px;height:12px;border-radius:50%;flex-shrink:0}
+  .lp-main{flex:1;min-width:0}
+  .lp-name{font-size:14px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .lp-name .fav{color:var(--accent)}
+  .lp-addr{font-size:12px;color:var(--ink-2);font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-top:1px}
+  .lp-dist{font-size:13px;font-weight:800;flex-shrink:0}
+  .lp-empty{padding:26px 0;text-align:center;color:var(--ink-2);font-size:14px;font-weight:500}
+
+  /* Impostazioni */
+  #setTitle{
+    font-size:17px;font-weight:800;letter-spacing:-.02em;
+    display:flex;align-items:center;gap:8px;
+    position:sticky;top:0;background:var(--surface);
+    padding-bottom:12px;z-index:2;
+  }
+  .set-section{
+    font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.04em;
+    color:var(--ink-2);margin:18px 0 8px;
+  }
+  .set-section:first-of-type{margin-top:4px}
+  .set-info{
+    background:var(--bg);border:1.5px solid var(--line);border-radius:14px;
+    padding:6px 14px;margin-bottom:6px;
+  }
+  .set-info-grid{display:flex;flex-wrap:wrap}
+  .set-info-grid .set-info-row{width:50%;box-sizing:border-box}
+  .set-info-grid .set-info-row.full{width:100%}
+  .set-info-row{
+    display:flex;flex-direction:column;gap:1px;
+    font-size:11px;font-weight:600;color:var(--ink-2);padding:7px 6px 7px 0;
+  }
+  .set-info-row b{color:var(--ink);font-weight:800;font-size:13px}
+  .set-btn{
+    width:100%;padding:14px;border-radius:14px;cursor:pointer;margin-bottom:10px;
+    border:1.5px solid var(--line);background:var(--surface);color:var(--ink);
+    font-size:14px;font-weight:700;
+    display:flex;align-items:center;justify-content:center;gap:9px;
+  }
+  .set-btn:active{transform:scale(.97)}
+  .set-btn svg{width:17px;height:17px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+  .set-btn.danger{color:var(--danger);border-color:color-mix(in srgb, var(--danger) 40%, var(--line))}
+  .set-btn.primary{background:var(--accent);border-color:var(--accent);color:var(--accent-ink);margin-top:8px}
+  .set-note{font-size:11px;color:var(--ink-2);font-weight:500;text-align:center;margin-top:4px}
+  .set-field{margin-bottom:14px}
+  .set-field label{display:block;font-size:12px;font-weight:700;color:var(--ink-2);margin-bottom:6px}
+  .set-field-row{display:flex;gap:8px}
+  .set-hint{font-size:11px;color:var(--ink-2);font-weight:500;margin-top:6px;line-height:1.4}
+  .fld-input{
+    flex:1;min-width:0;height:42px;border-radius:12px;border:1.5px solid var(--line);
+    background:var(--bg);color:var(--ink);padding:0 12px;
+    font-family:inherit;font-size:16px;font-weight:500;outline:none;
+    -webkit-user-select:text;user-select:text;
+  }
+  .fld-input.full{width:100%}
+  .fld-btn{
+    height:42px;padding:0 14px;border-radius:12px;border:none;cursor:pointer;
+    background:var(--accent);color:var(--accent-ink);font-family:inherit;font-size:14px;font-weight:800;
+    flex-shrink:0;
+  }
+  .fld-btn.ghost{background:var(--bg);color:var(--ink);border:1.5px solid var(--line);font-size:16px;padding:0 12px}
+  .fld-btn:active{transform:scale(.95)}
+
+  .place-pin{
+    width:30px;height:30px;border-radius:50%;
+    background:var(--surface);border:2.5px solid var(--accent);
+    display:flex;align-items:center;justify-content:center;font-size:14px;
+    box-shadow:0 2px 8px rgba(0,0,0,.3);
+  }
+
+  #lref{display:flex;gap:8px;margin:2px 0 10px}
+  .lref-chip{
+    padding:7px 12px;border-radius:999px;cursor:pointer;
+    border:1.5px solid var(--line);background:var(--chip-bg);color:var(--ink);
+    font-family:inherit;font-size:12px;font-weight:700;
+  }
+  .lref-chip.on{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+  .lref-chip.unset{opacity:.4}
+
+  /* Form contributo locker */
+  #addBrands{display:flex;gap:8px;flex-wrap:wrap;margin:2px 0 16px}
+  .ab-chip{
+    display:flex;align-items:center;gap:7px;padding:9px 13px;border-radius:999px;cursor:pointer;
+    border:1.5px solid var(--line);background:var(--chip-bg);color:var(--ink);font-size:13px;font-weight:700;
+  }
+  .ab-chip .dot{width:10px;height:10px;border-radius:50%}
+  .ab-chip.sel{border-color:var(--ink);background:var(--ink);color:var(--bg)}
+  .add-field{margin-bottom:12px}
+  .add-field label{display:block;font-size:12px;font-weight:700;color:var(--ink-2);margin-bottom:6px}
+  .add-field input{
+    width:100%;height:44px;border-radius:12px;border:1.5px solid var(--line);
+    background:var(--bg);color:var(--ink);padding:0 13px;
+    font-family:inherit;font-size:16px;font-weight:500;outline:none;
+    -webkit-user-select:text;user-select:text;
+  }
+  #addCoords{font-size:11px;color:var(--ink-2);font-weight:600;margin-bottom:14px}
+  #addSubmit{
+    width:100%;padding:15px;border-radius:14px;border:none;cursor:pointer;
+    background:var(--accent);color:var(--accent-ink);font-size:15px;font-weight:800;
+  }
+  #addSubmit:active{transform:scale(.98)}
+  #addSubmit:disabled{opacity:.5}
+  #addNoShare{
+    margin-top:12px;padding:12px 14px;border-radius:12px;background:var(--bg);
+    border:1.5px dashed var(--line);font-size:12px;color:var(--ink-2);font-weight:500;line-height:1.5;display:none;
+  }
+  #addNoShare.show{display:block}
+  #addNoShare b{color:var(--ink)}
+
+  @media (prefers-reduced-motion: reduce){
+    *,*::before,*::after{animation-duration:.001s !important;transition-duration:.001s !important}
+  }
+  @media (min-width:700px){
+    header{padding:16px 24px 8px}
+    #searchwrap{padding:0 24px 8px}
+    #searchResults{left:24px;right:24px}
+    #chips{padding:2px 24px 14px}
+    .panel{left:auto;right:24px;bottom:24px;max-width:420px;border-radius:22px}
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="brand">
+    <div class="logo">
+      <svg viewBox="0 0 24 24" width="24" height="24" aria-hidden="true">
+        <rect x="2.5" y="3" width="8.5" height="8" rx="1.8" fill="#12151C"/>
+        <rect x="13" y="3" width="8.5" height="8" rx="1.8" fill="#12151C"/>
+        <rect x="2.5" y="13" width="8.5" height="8" rx="1.8" fill="#12151C"/>
+        <rect x="13" y="13" width="8.5" height="8" rx="1.8" fill="#D22730"/>
+      </svg>
+    </div>
+    <div>
+      <h1>Dex <em>Locker</em></h1>
+      <p id="subtitle">Roma e provincia</p>
+    </div>
+  </div>
+  <div class="actions">
+    <button class="icon-btn" id="btnLocate" title="Trova la mia posizione" aria-label="Trova la mia posizione">
+      <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3"/><circle cx="12" cy="12" r="8"/></svg>
+    </button>
+    <button class="icon-btn" id="btnReload" title="Aggiorna dati" aria-label="Aggiorna dati">
+      <svg viewBox="0 0 24 24"><path d="M21 12a9 9 0 1 1-2.6-6.3"/><path d="M21 3v6h-6"/></svg>
+    </button>
+    <button class="icon-btn" id="btnSettings" title="Impostazioni" aria-label="Impostazioni">
+      <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .34 1.87l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.7 1.7 0 0 0-1.87-.34 1.7 1.7 0 0 0-1.03 1.56V21a2 2 0 1 1-4 0v-.09a1.7 1.7 0 0 0-1.11-1.56 1.7 1.7 0 0 0-1.87.34l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.7 1.7 0 0 0 .34-1.87 1.7 1.7 0 0 0-1.56-1.03H3a2 2 0 1 1 0-4h.09a1.7 1.7 0 0 0 1.56-1.11 1.7 1.7 0 0 0-.34-1.87l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.7 1.7 0 0 0 1.87.34h.01A1.7 1.7 0 0 0 10 3.09V3a2 2 0 1 1 4 0v.09a1.7 1.7 0 0 0 1.03 1.56 1.7 1.7 0 0 0 1.87-.34l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.7 1.7 0 0 0-.34 1.87v.01A1.7 1.7 0 0 0 20.91 10H21a2 2 0 1 1 0 4h-.09a1.7 1.7 0 0 0-1.51 1z"/></svg>
+    </button>
+  </div>
+</header>
+
+<div id="searchwrap">
+  <form id="searchForm" autocomplete="off">
+    <div class="search-box">
+      <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg>
+      <input id="searchInput" type="search" placeholder="Cerca indirizzo o CAP…" enterkeyhint="search">
+      <button type="button" id="searchClear" aria-label="Cancella ricerca">✕</button>
+    </div>
+    <button type="submit" id="searchGo">Vai</button>
+  </form>
+  <div id="searchResults"></div>
+</div>
+
+<div id="chips" role="group" aria-label="Filtra per corriere"></div>
+
+<div id="mapwrap">
+  <div id="map"></div>
+  <button id="btnArea">
+    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg>
+    Cerca in quest'area
+  </button>
+  <button id="btnList">
+    <svg viewBox="0 0 24 24"><path d="M4 6h16M4 12h16M4 18h10"/></svg>
+    Vicini
+  </button>
+  <button id="btnAdd" title="Aggiungi un locker" aria-label="Aggiungi un locker">
+    <svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>
+  </button>
+  <div id="crosshair"><div class="head"><span>📦</span></div><div class="stem"></div></div>
+  <div id="placeBar">
+    <span>Trascina la mappa sul locker</span>
+    <button class="cancel" id="placeCancel">Annulla</button>
+    <button class="go" id="placeConfirm">Qui ✓</button>
+  </div>
+  <div id="loader"><div class="spinner"></div><p id="loaderText">Carico i locker…</p></div>
+  <div id="toast" role="status"></div>
+</div>
+
+<div id="backdrop"></div>
+
+<!-- Scheda dettaglio locker -->
+<div id="sheet" class="panel" role="dialog" aria-modal="true">
+  <div class="grab"></div>
+  <div class="sh-brand" id="sh-brand"><span class="dot"></span><span id="sh-brand-name"></span></div>
+  <div class="sh-titlerow">
+    <div id="sh-title"></div>
+    <button id="sh-fav" aria-label="Salva nei preferiti">
+      <svg viewBox="0 0 24 24"><path d="M12 3l2.7 5.6 6.1.9-4.4 4.3 1 6.1-5.4-2.9-5.4 2.9 1-6.1L3.2 9.5l6.1-.9z"/></svg>
+    </button>
+  </div>
+  <div id="sh-addr"></div>
+  <div id="sh-dist"></div>
+  <div class="sh-rows" id="sh-rows"></div>
+  <div class="sh-btns">
+    <a class="sh-btn secondary" id="sh-apple" target="_blank" rel="noopener">
+      <svg viewBox="0 0 24 24"><path d="M12 21s-7-6.1-7-11a7 7 0 0 1 14 0c0 4.9-7 11-7 11z"/><circle cx="12" cy="10" r="2.5"/></svg>
+      Apple Maps
+    </a>
+    <a class="sh-btn primary" id="sh-google" target="_blank" rel="noopener">
+      <svg viewBox="0 0 24 24"><polygon points="3 11 22 2 13 21 11 13 3 11" fill="none"/></svg>
+      Indicazioni
+    </a>
+  </div>
+
+  <div class="cm-title">💬 Commenti</div>
+  <div id="cm-list"></div>
+  <button class="set-btn" id="cm-toggle">
+    <svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>
+    Aggiungi un commento o una foto
+  </button>
+
+  <div id="cm-form">
+    <textarea id="cm-text" placeholder="Com'è la situazione? Es. &quot;funzionante&quot;, &quot;pieno da giorni&quot;, &quot;posizione comoda&quot;…" maxlength="300"></textarea>
+    <input id="cm-name" type="text" placeholder="Il tuo nome (facoltativo)" maxlength="40" autocomplete="off">
+    <div class="cm-photo-row">
+      <label id="cm-photo-label" for="cm-photo-input">
+        <svg viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="14" rx="2"/><circle cx="12" cy="12" r="3.5"/><path d="M8 5l1.5-2h5L16 5"/></svg>
+        Foto
+      </label>
+      <span id="cm-photo-name">Nessuna foto scelta</span>
+    </div>
+    <input id="cm-photo-input" type="file" accept="image/*" capture="environment">
+    <div class="cm-form-btns">
+      <button id="cm-cancel">Annulla</button>
+      <button id="cm-send">Invia commento</button>
+    </div>
+  </div>
+</div>
+
+<!-- Lista locker più vicini -->
+<div id="listPanel" class="panel" role="dialog" aria-modal="true">
+  <div class="grab"></div>
+  <div id="listTitle">Locker più vicini</div>
+  <div id="lref">
+    <button class="lref-chip" data-m="auto">📍 Posizione</button>
+    <button class="lref-chip" data-m="home">🏠 Casa</button>
+    <button class="lref-chip" data-m="work">💼 Lavoro</button>
+  </div>
+  <div id="listRef"></div>
+  <div id="listRows"></div>
+</div>
+
+<!-- Impostazioni -->
+<div id="settingsPanel" class="panel" role="dialog" aria-modal="true">
+  <div class="grab"></div>
+  <div id="setTitle">⚙️ Impostazioni</div>
+
+  <div class="set-section">Stato dell'app</div>
+  <div class="set-info set-info-grid">
+    <div class="set-info-row"><span>Versione</span><b id="set-version"></b></div>
+    <div class="set-info-row"><span>Preferiti</span><b id="set-favs"></b></div>
+    <div class="set-info-row"><span>Locker caricati</span><b id="set-count"></b></div>
+    <div class="set-info-row"><span>Da InPost ufficiale</span><b id="set-inpost"></b></div>
+    <div class="set-info-row full"><span>Dati aggiornati il</span><b id="set-updated"></b></div>
+    <div class="set-info-row full"><span>Rete InPost scaricata il</span><b id="set-ipdate"></b></div>
+  </div>
+
+  <div class="set-section">I tuoi luoghi</div>
+  <div class="set-field">
+    <label for="set-home">🏠 Casa</label>
+    <div class="set-field-row">
+      <input class="fld-input" id="set-home" type="text" placeholder="Indirizzo di casa…" autocomplete="off">
+      <button class="fld-btn ghost" id="set-home-gps" title="Usa la posizione attuale">📍</button>
+      <button class="fld-btn" id="set-home-save">Salva</button>
+    </div>
+    <div class="set-hint" id="set-home-cur">Non impostata</div>
+  </div>
+  <div class="set-field">
+    <label for="set-work">💼 Lavoro</label>
+    <div class="set-field-row">
+      <input class="fld-input" id="set-work" type="text" placeholder="Indirizzo del lavoro…" autocomplete="off">
+      <button class="fld-btn ghost" id="set-work-gps" title="Usa la posizione attuale">📍</button>
+      <button class="fld-btn" id="set-work-save">Salva</button>
+    </div>
+    <div class="set-hint" id="set-work-cur">Non impostato</div>
+  </div>
+
+  <div class="set-section">Manutenzione</div>
+  <button class="set-btn" id="set-clearcache">
+    <svg viewBox="0 0 24 24"><path d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6"/><path d="M10 11v6M14 11v6"/></svg>
+    Svuota cache e riscarica i dati
+  </button>
+  <button class="set-btn" id="set-refreship">
+    <svg viewBox="0 0 24 24"><rect x="4" y="4" width="7" height="7" rx="1.5"/><rect x="13" y="4" width="7" height="7" rx="1.5"/><rect x="4" y="13" width="7" height="7" rx="1.5"/><rect x="13" y="13" width="7" height="7" rx="1.5"/></svg>
+    Riscarica la rete InPost ufficiale
+  </button>
+  <button class="set-btn" id="set-reloadapp">
+    <svg viewBox="0 0 24 24"><path d="M21 12a9 9 0 1 1-2.6-6.3"/><path d="M21 3v6h-6"/></svg>
+    Ricarica l'app (aggiorna versione)
+  </button>
+  <button class="set-btn" id="set-clearmine">
+    <svg viewBox="0 0 24 24"><path d="M18 6L6 18M6 6l12 12"/></svg>
+    Rimuovi le tue proposte in attesa
+  </button>
+  <button class="set-btn danger" id="set-clearfavs">
+    <svg viewBox="0 0 24 24"><path d="M12 3l2.7 5.6 6.1.9-4.4 4.3 1 6.1-5.4-2.9-5.4 2.9 1-6.1L3.2 9.5l6.1-.9z"/></svg>
+    Cancella tutti i preferiti
+  </button>
+  <div class="set-note">Dati: OpenStreetMap · La cache rende l'avvio istantaneo e permette l'uso offline</div>
+
+  <div id="devSection" style="display:none">
+    <div class="set-section">🛠 Sviluppatore</div>
+    <div class="set-field">
+      <label for="set-sburl">Registro pubblico (Supabase) — Project URL</label>
+      <input class="fld-input full" id="set-sburl" type="url" placeholder="https://xxxxx.supabase.co" autocomplete="off">
+    </div>
+    <div class="set-field">
+      <label for="set-sbkey">Chiave pubblica (anon key)</label>
+      <input class="fld-input full" id="set-sbkey" type="text" placeholder="eyJ…" autocomplete="off">
+      <button class="set-btn primary" id="set-sbsave">Salva registro pubblico</button>
+      <div class="set-hint">I locker proposti con "+" restano in attesa di approvazione (dalla dashboard Supabase) prima di comparire a tutti gli utenti. Guida completa: "guida-supabase.md"</div>
+    </div>
+    <button class="set-btn" id="set-devlock">
+      <svg viewBox="0 0 24 24"><rect x="4" y="10" width="16" height="10" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></svg>
+      Blocca modalità sviluppatore
+    </button>
+  </div>
+</div>
+
+<!-- Aggiungi locker -->
+<div id="addPanel" class="panel" role="dialog" aria-modal="true">
+  <div class="grab"></div>
+  <div id="setTitle">📦 Nuovo locker</div>
+  <div id="addBrands"></div>
+  <div class="add-field">
+    <label for="add-name">Nome del punto (es. Supermercato, edificio…)</label>
+    <input id="add-name" type="text" placeholder="Es. Conad Via Roma">
+  </div>
+  <div class="add-field">
+    <label for="add-addr">Indirizzo</label>
+    <input id="add-addr" type="text" placeholder="Via, numero civico, città">
+  </div>
+  <div id="addCoords"></div>
+  <button id="addSubmit">Pubblica locker</button>
+  <div id="addNoShare">📍 Verrà salvato <b>solo sul tuo telefono</b>: nessun registro pubblico Supabase configurato. Vai in ⚙️ Impostazioni per collegarlo (guida-supabase.md).</div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet.markercluster/1.5.3/leaflet.markercluster.min.js"></script>
+<script>
+/* ============================================================
+   DEX LOCKER v2.0 — mappa dei locker per pacchi, Roma e provincia
+   Dati: OpenStreetMap via Overpass API (amenity=parcel_locker)
+   Geocoding: Nominatim (OpenStreetMap)
+   ============================================================ */
+
+const APP_VERSION = '4.1';
+const ROME_BBOX = '41.40,11.73,42.30,13.30';
+
+const OVERPASS_ENDPOINTS = [
+  'https://overpass-api.de/api/interpreter',
+  'https://overpass.kumi.systems/api/interpreter',
+  'https://overpass.private.coffee/api/interpreter'
+];
+
+const BRANDS = {
+  inpost : { name:'InPost',          color:'#F5B800', text:'#171A21', letter:'I' },
+  amazon : { name:'Amazon Hub',      color:'#00A8E1', text:'#0B2233', letter:'A' },
+  poste  : { name:'Poste Italiane',  color:'#003DA5', text:'#FFFFFF', letter:'P' },
+  gls    : { name:'GLS',             color:'#5B2D8E', text:'#FFFFFF', letter:'G' },
+  brt    : { name:'BRT Fermopoint',  color:'#D22730', text:'#FFFFFF', letter:'B' },
+  dhl    : { name:'DHL',             color:'#FFCC00', text:'#D40511', letter:'D' },
+  ups    : { name:'UPS',             color:'#4A3526', text:'#FFB500', letter:'U' },
+  altro  : { name:'Altri',           color:'#6B7280', text:'#FFFFFF', letter:'?' }
+};
+
+function detectBrand(tags){
+  const s = ((tags.brand||'')+' '+(tags.operator||'')+' '+(tags.name||'')).toLowerCase();
+  if (s.includes('inpost')) return 'inpost';
+  if (s.includes('amazon')) return 'amazon';
+  if (s.includes('poste') || s.includes('puntoposte') || s.includes('punto poste') || s.includes('pt locker')) return 'poste';
+  if (s.includes('gls')) return 'gls';
+  if (s.includes('fermopoint') || s.includes('brt') || s.includes('bartolini')) return 'brt';
+  if (s.includes('dhl')) return 'dhl';
+  if (s.includes('ups')) return 'ups';
+  return 'altro';
+}
+
+// ----- Archivio locale sicuro (funziona ovunque, degrada senza errori) -----
+function lsGet(k){ try{ return localStorage.getItem(k); }catch(e){ return null; } }
+function lsSet(k,v){ try{ localStorage.setItem(k,v); }catch(e){} }
+
+// ----- Stato -----
+let lockers = [];
+let active  = new Set(Object.keys(BRANDS));
+let favOnly = false;
+let loadedOnce = false;
+let meMarker = null, searchMarker = null;
+let userPos = null;    // {lat, lon} posizione GPS
+let searchPos = null;  // {lat, lon, label} indirizzo cercato
+const markerById = {};
+
+const favs = new Set(JSON.parse(lsGet('dexlocker-favs-v1') || '[]'));
+function saveFavs(){ lsSet('dexlocker-favs-v1', JSON.stringify([...favs])); }
+
+// ----- Mappa -----
+const isDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+const map = L.map('map', { zoomControl:false, attributionControl:true }).setView([41.9028, 12.4964], 11);
+L.control.zoom({ position:'topright' }).addTo(map);
+
+L.tileLayer(
+  isDark
+    ? 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png'
+    : 'https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png',
+  { attribution:`<b>Dex Locker v${APP_VERSION}</b> | &copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> &copy; CARTO`, maxZoom:20 }
+).addTo(map);
+
+const cluster = L.markerClusterGroup({
+  maxClusterRadius: 55,
+  showCoverageOnHover: false,
+  chunkedLoading: true,
+  chunkInterval: 100,
+  iconCreateFunction: c => L.divIcon({
+    html: `<div class="cluster" style="width:${c.getChildCount()>99?44:38}px;height:${c.getChildCount()>99?44:38}px">${c.getChildCount()}</div>`,
+    className:'', iconSize:[38,38]
+  })
+});
+map.addLayer(cluster);
+
+// ----- UI helpers -----
+const $ = id => document.getElementById(id);
+let toastTimer;
+function toast(msg, ms=2600){
+  const t = $('toast'); t.textContent = msg; t.classList.add('show');
+  clearTimeout(toastTimer); toastTimer = setTimeout(()=>t.classList.remove('show'), ms);
+}
+function setLoading(on){ $('loader').classList.toggle('show', on); }
+
+// ----- Distanze -----
+function haversine(a, b){
+  const R = 6371000, rad = Math.PI/180;
+  const dLat = (b.lat-a.lat)*rad, dLon = (b.lon-a.lon)*rad;
+  const h = Math.sin(dLat/2)**2 + Math.cos(a.lat*rad)*Math.cos(b.lat*rad)*Math.sin(dLon/2)**2;
+  return 2*R*Math.asin(Math.sqrt(h));
+}
+function fmtDist(m){
+  return m < 1000 ? Math.round(m) + ' m' : (m/1000).toFixed(1).replace('.', ',') + ' km';
+}
+function refPoint(){
+  if (userPos)   return { ...userPos, label:'dalla tua posizione' };
+  if (searchPos) return { ...searchPos, label:'da ' + searchPos.label };
+  const c = map.getCenter();
+  return { lat:c.lat, lon:c.lng, label:'dal centro della mappa' };
+}
+
+// ----- Luoghi salvati: Casa e Lavoro -----
+const PLACES = {
+  home: { key:'dexlocker-home-v1', nome:'casa',   emoji:'🏠' },
+  work: { key:'dexlocker-work-v1', nome:'lavoro', emoji:'💼' }
+};
+const places = { home:null, work:null };
+const placeMarkers = { home:null, work:null };
+
+function loadPlaces(){
+  for (const k in PLACES){
+    try{ places[k] = JSON.parse(lsGet(PLACES[k].key)); }catch(e){ places[k] = null; }
+  }
+}
+function savePlace(k, val){
+  places[k] = val;
+  lsSet(PLACES[k].key, val ? JSON.stringify(val) : '');
+  renderPlaceMarkers();
+}
+function renderPlaceMarkers(){
+  for (const k in PLACES){
+    if (placeMarkers[k]){ map.removeLayer(placeMarkers[k]); placeMarkers[k] = null; }
+    if (places[k]){
+      placeMarkers[k] = L.marker([places[k].lat, places[k].lon], {
+        icon: L.divIcon({ className:'', html:`<div class="place-pin">${PLACES[k].emoji}</div>`, iconSize:[30,30], iconAnchor:[15,15] }),
+        zIndexOffset: 950
+      }).addTo(map);
+    }
+  }
+}
+async function geocodeFirst(q){
+  const url = `https://nominatim.openstreetmap.org/search?format=json&limit=1&countrycodes=it&q=${encodeURIComponent(q)}`;
+  const r = await fetch(url, { headers:{ 'Accept':'application/json' } });
+  const res = await r.json();
+  if (!res.length) return null;
+  return { lat:+res[0].lat, lon:+res[0].lon, label: res[0].display_name.split(',').slice(0,3).join(', ').trim() };
+}
+function refPointFor(mode){
+  if (mode === 'home' && places.home) return { ...places.home, label:'da casa' };
+  if (mode === 'work' && places.work) return { ...places.work, label:'dal lavoro' };
+  return refPoint();
+}
+
+// ----- Fetch da Overpass -----
+// minExpected: sotto questa soglia il risultato è sospetto (query troncata dal
+// server sotto carico) → si prova il server successivo e si tiene il migliore.
+async function fetchLockers(bbox, minExpected = 0){
+  // Include anche il vecchio schema di tagging OSM (vending_machine per pacchi)
+  const query = `[out:json][timeout:50];(node["amenity"="parcel_locker"](${bbox});way["amenity"="parcel_locker"](${bbox});node["amenity"="vending_machine"]["vending"~"parcel_pickup|parcel_mail_in"](${bbox}););out center tags;`;
+  let best = null, lastErr;
+  for (const url of OVERPASS_ENDPOINTS){
+    const ctrl = new AbortController();
+    const timer = setTimeout(() => ctrl.abort(), 55000);
+    try{
+      const r = await fetch(url, {
+        method:'POST',
+        headers:{ 'Content-Type':'application/x-www-form-urlencoded' },
+        body:'data=' + encodeURIComponent(query),
+        signal: ctrl.signal
+      });
+      if (!r.ok) throw new Error('HTTP ' + r.status);
+      const data = await r.json();
+      const truncated = data.remark && /timed out|runtime error/i.test(data.remark);
+      const elements = data.elements || [];
+      if (!truncated && elements.length >= minExpected) return elements;   // risultato pieno e plausibile
+      if (!best || elements.length > best.length) best = elements;         // tieni il migliore finora
+    }catch(e){ lastErr = e; }
+    finally{ clearTimeout(timer); }
+  }
+  if (best && best.length) return best;   // meglio un risultato parziale che niente
+  throw lastErr || new Error('Overpass non raggiungibile');
+}
+
+const KEEP_TAGS = ['name','ref','opening_hours','addr:street','addr:housenumber','addr:city','note','covered','indoor','brand','operator'];
+function slimTags(t){
+  const keep = {};
+  for (const k of KEEP_TAGS) if (t[k]) keep[k] = t[k];
+  return keep;
+}
+
+function parseElements(elements){
+  const seen = new Set();
+  const out = [];
+  for (const el of elements){
+    const id = el.type + '/' + el.id;
+    if (seen.has(id)) continue;
+    seen.add(id);
+    const lat = el.lat ?? el.center?.lat;
+    const lon = el.lon ?? el.center?.lon;
+    if (lat == null || lon == null) continue;
+    const tags = el.tags || {};
+    out.push({ id, lat, lon, brand: detectBrand(tags), tags: slimTags(tags) });
+  }
+  return out;
+}
+
+// ----- Fonte ufficiale InPost Italia -----
+// L'API pubblica serve 25 punti a pagina (parametri ignorati), ~450 pagine per
+// tutta Italia. Strategia: scansione completa una tantum in parallelo, poi la
+// rete resta salvata sul telefono per 7 giorni. Solo locker con stato "Operating".
+const IP_BASE = 'https://api-it-local-points.easypack24.net/v1/points';
+const IP_CACHE_KEY = 'dexlocker-inpost-v1';
+const IP_TTL = 7 * 24 * 3600 * 1000;   // 7 giorni
+
+async function fetchInPostPage(page){
+  const ctrl = new AbortController();
+  const timer = setTimeout(() => ctrl.abort(), 15000);
+  try{
+    const r = await fetch(`${IP_BASE}?page=${page}`, { signal: ctrl.signal });
+    if (!r.ok) throw new Error('HTTP ' + r.status);
+    return await r.json();
+  }finally{ clearTimeout(timer); }
+}
+
+function ipProgress(done, total){
+  const el = $('loaderText');
+  if (el && $('loader').classList.contains('show')){
+    el.textContent = `Scarico la rete InPost ufficiale: ${Math.round(done/total*100)}% (solo la prima volta)`;
+  }
+}
+
+async function loadInPostNetwork(){
+  // Cache valida? Usala
+  try{
+    const c = JSON.parse(lsGet(IP_CACHE_KEY));
+    const ttl = c && c.partial ? 24 * 3600 * 1000 : IP_TTL;
+    if (c && Array.isArray(c.points) && c.points.length && (Date.now() - c.ts) < ttl) return c.points;
+  }catch(e){}
+
+  // Scansione completa in parallelo
+  const first = await fetchInPostPage(1);
+  const totalPages = first.total_pages || 1;
+  const pages = [first];
+  const queue = []; for (let p = 2; p <= totalPages; p++) queue.push(p);
+  let done = 1, failed = 0;
+
+  async function worker(){
+    while (queue.length){
+      const p = queue.shift();
+      try{ pages.push(await fetchInPostPage(p)); }
+      catch(e1){
+        try{ pages.push(await fetchInPostPage(p)); }   // un tentativo di recupero
+        catch(e2){ failed++; }
+      }
+      done++;
+      if (done % 10 === 0 || done === totalPages) ipProgress(done, totalPages);
+    }
+  }
+  await Promise.all(Array.from({ length: 16 }, worker));
+
+  const points = [];
+  for (const pg of pages) for (const p of (pg.items || [])){
+    if (p.status !== 'Operating') continue;                      // esclude quelli non ancora attivi
+    if (!(p.type || []).includes('parcel_locker')) continue;     // solo locker, non punti in negozio
+    const lat = p.location?.latitude, lon = p.location?.longitude;
+    if (lat == null || lon == null) continue;
+    const ad = p.address_details || {};
+    points.push({
+      id: 'inpost/' + p.name,
+      lat, lon,
+      brand: 'inpost',
+      official: true,
+      tags: {
+        name: p.location_description || p.location_description_2 || ('Locker ' + p.name),
+        ref: p.name,
+        opening_hours: p.location_247 ? '24/7' : '',
+        'addr:street': [ad.street, ad.building_number].filter(Boolean).join(' '),
+        'addr:city': [ad.post_code, ad.city].filter(Boolean).join(' ')
+      }
+    });
+  }
+  lsSet(IP_CACHE_KEY, JSON.stringify({ ts: Date.now(), partial: failed > totalPages * 0.05, points }));
+  return points;
+}
+
+async function fetchInPost(bbox){
+  const [s, w, n, e] = bbox.split(',').map(Number);
+  const all = await loadInPostNetwork();
+  return all.filter(p => p.lat >= s && p.lat <= n && p.lon >= w && p.lon <= e);
+}
+
+// Fusione fonti: se un locker InPost di OSM è a <60 m da un punto ufficiale,
+// vince il dato ufficiale (più preciso e aggiornato)
+function mergeSources(osm, official){
+  if (!official.length) return osm;
+  const kept = osm.filter(o => o.brand !== 'inpost' || !official.some(f => haversine(o, f) < 60));
+  return kept.concat(official);
+}
+
+// I punti personali si aggiungono solo se non duplicano un punto già noto (<40 m, stesso brand)
+function mergeCustom(base, custom){
+  if (!custom.length) return base;
+  const extra = custom.filter(c => !base.some(b => b.brand === c.brand && haversine(b, c) < 40));
+  return base.concat(extra);
+}
+
+// ----- Contributi utente: aggiungi locker in stile Waze -----
+// Se è configurata una fonte condivisa (SheetDB), il contributo viene inviato lì
+// e diventa visibile a chiunque usi l'app puntata sullo stesso foglio.
+// Senza fonte condivisa, il contributo resta salvato solo su questo telefono.
+const LOCAL_ADDED_KEY = 'dexlocker-mine-v1';
+let addSelectedBrand = 'inpost';
+
+function loadLocalAdded(){
+  try{ return JSON.parse(lsGet(LOCAL_ADDED_KEY)) || []; }catch(e){ return []; }
+}
+function saveLocalAdded(list){ lsSet(LOCAL_ADDED_KEY, JSON.stringify(list)); }
+
+function fetchLocalAdded(bbox){
+  const [s, w, n, e] = bbox.split(',').map(Number);
+  return loadLocalAdded()
+    .filter(p => p.lat >= s && p.lat <= n && p.lon >= w && p.lon <= e)
+    .map(p => ({ ...p, mine:true }));
+}
+
+// ----- Registro pubblico Supabase (lettura approvati + invio proposte) -----
+const SB_URL_KEY = 'dexlocker-sb-url';
+const SB_KEY_KEY = 'dexlocker-sb-key';
+
+function sbConfig(){
+  const url = (lsGet(SB_URL_KEY) || '').trim().replace(/\/$/, '');
+  const key = (lsGet(SB_KEY_KEY) || '').trim();
+  return (url && key) ? { url, key } : null;
+}
+
+async function fetchSupabaseApproved(bbox){
+  const cfg = sbConfig();
+  if (!cfg) return [];
+  const [s, w, n, e] = bbox.split(',').map(Number);
+  const ctrl = new AbortController();
+  const timer = setTimeout(() => ctrl.abort(), 15000);
+  try{
+    const qs = `status=eq.approved&lat=gte.${s}&lat=lte.${n}&lon=gte.${w}&lon=lte.${e}&select=*`;
+    const r = await fetch(`${cfg.url}/rest/v1/lockers?${qs}`, {
+      headers:{ 'apikey': cfg.key, 'Authorization': 'Bearer ' + cfg.key },
+      signal: ctrl.signal
+    });
+    if (!r.ok) throw new Error('HTTP ' + r.status);
+    const rows = await r.json();
+    return rows.map(row => ({
+      id: 'sb/' + row.id,
+      lat: row.lat, lon: row.lon,
+      brand: detectBrand({ brand: row.brand || '' }),
+      community: true,
+      tags: {
+        name: row.nome || '', 'addr:street': row.via || '',
+        'addr:city': row.citta || '', opening_hours: row.orari || ''
+      }
+    }));
+  }finally{ clearTimeout(timer); }
+}
+
+async function submitToSupabase(row, table = 'lockers'){
+  const cfg = sbConfig();
+  if (!cfg) return false;
+  const ctrl = new AbortController();
+  const timer = setTimeout(() => ctrl.abort(), 15000);
+  try{
+    const r = await fetch(`${cfg.url}/rest/v1/${table}`, {
+      method:'POST',
+      headers:{
+        'apikey': cfg.key, 'Authorization': 'Bearer ' + cfg.key,
+        'Content-Type':'application/json', 'Prefer':'return=minimal'
+      },
+      body: JSON.stringify({ ...row, status:'pending' }),
+      signal: ctrl.signal
+    });
+    if (!r.ok) throw new Error('HTTP ' + r.status);
+    return true;
+  }finally{ clearTimeout(timer); }
+}
+
+// ----- Commenti e foto sui locker -----
+const MY_COMMENTS_KEY = 'dexlocker-mycomments-v1';
+const CM_NAME_KEY = 'dexlocker-mycommentname';
+
+function loadMyComments(){
+  try{ return JSON.parse(lsGet(MY_COMMENTS_KEY)) || []; }catch(e){ return []; }
+}
+function saveMyComment(c){
+  const mine = loadMyComments();
+  mine.push(c);
+  lsSet(MY_COMMENTS_KEY, JSON.stringify(mine));
+}
+
+async function fetchComments(lockerId){
+  const cfg = sbConfig();
+  if (!cfg) return [];
+  const ctrl = new AbortController();
+  const timer = setTimeout(() => ctrl.abort(), 12000);
+  try{
+    const qs = `locker_id=eq.${encodeURIComponent(lockerId)}&status=eq.approved&select=*&order=created_at.desc`;
+    const r = await fetch(`${cfg.url}/rest/v1/comments?${qs}`, {
+      headers:{ 'apikey': cfg.key, 'Authorization': 'Bearer ' + cfg.key },
+      signal: ctrl.signal
+    });
+    if (!r.ok) throw new Error('HTTP ' + r.status);
+    return await r.json();
+  }finally{ clearTimeout(timer); }
+}
+
+// Ridimensiona e comprime la foto prima di caricarla: risparmia dati e spazio
+function resizeImage(file){
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    const url = URL.createObjectURL(file);
+    img.onload = () => {
+      const maxSide = 1280;
+      const scale = Math.min(1, maxSide / Math.max(img.width, img.height));
+      const canvas = document.createElement('canvas');
+      canvas.width = Math.round(img.width * scale);
+      canvas.height = Math.round(img.height * scale);
+      canvas.getContext('2d').drawImage(img, 0, 0, canvas.width, canvas.height);
+      URL.revokeObjectURL(url);
+      canvas.toBlob(blob => blob ? resolve(blob) : reject(new Error('Compressione fallita')), 'image/jpeg', 0.75);
+    };
+    img.onerror = () => { URL.revokeObjectURL(url); reject(new Error('Immagine non valida')); };
+    img.src = url;
+  });
+}
+
+async function uploadPhoto(file){
+  const cfg = sbConfig();
+  if (!cfg) return null;
+  const blob = await resizeImage(file);
+  const path = `${Date.now()}-${Math.random().toString(36).slice(2,8)}.jpg`;
+  const ctrl = new AbortController();
+  const timer = setTimeout(() => ctrl.abort(), 25000);
+  try{
+    const r = await fetch(`${cfg.url}/storage/v1/object/locker-photos/${path}`, {
+      method:'POST',
+      headers:{ 'apikey': cfg.key, 'Authorization': 'Bearer ' + cfg.key, 'Content-Type':'image/jpeg' },
+      body: blob,
+      signal: ctrl.signal
+    });
+    if (!r.ok) throw new Error('HTTP ' + r.status);
+    return `${cfg.url}/storage/v1/object/public/locker-photos/${path}`;
+  }finally{ clearTimeout(timer); }
+}
+
+function timeAgo(iso){
+  const diff = (Date.now() - new Date(iso).getTime()) / 1000;
+  if (diff < 60) return 'ora';
+  if (diff < 3600) return Math.floor(diff/60) + ' min fa';
+  if (diff < 86400) return Math.floor(diff/3600) + ' h fa';
+  return Math.floor(diff/86400) + ' g fa';
+}
+
+function renderComment(c, pending){
+  const author = (c.autore || '').trim() || 'Anonimo';
+  const time = pending ? 'in attesa' : timeAgo(c.created_at);
+  const photo = c.foto_url ? `<img class="cm-photo" src="${c.foto_url}" alt="Foto del locker" onclick="window.open('${c.foto_url}','_blank')">` : '';
+  const tag = pending ? '<span class="cm-pending-tag">In attesa di approvazione</span>' : '';
+  const testoHtml = c.testo ? `<div class="cm-text">${String(c.testo).replace(/</g,'&lt;')}</div>` : '';
+  return `<div class="cm-item${pending ? ' pending' : ''}">
+    ${tag}
+    <div class="cm-head"><span class="cm-author">${author}</span><span class="cm-time">${time}</span></div>
+    ${testoHtml}
+    ${photo}
+  </div>`;
+}
+
+async function loadComments(lockerId){
+  const list = $('cm-list');
+  list.innerHTML = '<div class="cm-empty">Carico i commenti…</div>';
+  const mine = loadMyComments().filter(c => c.locker_id === lockerId);
+  try{
+    const approved = sbConfig() ? await fetchComments(lockerId) : [];
+    const items = [...mine.map(c => renderComment(c, true)), ...approved.map(c => renderComment(c, false))];
+    list.innerHTML = items.length ? items.join('') : '<div class="cm-empty">Nessun commento ancora: sii il primo!</div>';
+  }catch(e){
+    list.innerHTML = mine.length
+      ? mine.map(c => renderComment(c, true)).join('')
+      : '<div class="cm-empty">Impossibile caricare i commenti al momento</div>';
+  }
+}
+
+function resetCommentForm(){
+  $('cm-form').classList.remove('show');
+  $('cm-text').value = '';
+  $('cm-name').value = lsGet(CM_NAME_KEY) || '';
+  $('cm-photo-input').value = '';
+  $('cm-photo-name').textContent = 'Nessuna foto scelta';
+  $('cm-send').disabled = false;
+  $('cm-send').textContent = 'Invia commento';
+}
+
+$('cm-toggle').onclick = () => {
+  if (!sbConfig()){ toast('Commenti non disponibili: registro pubblico non configurato'); return; }
+  $('cm-form').classList.toggle('show');
+};
+$('cm-cancel').onclick = resetCommentForm;
+$('cm-photo-input').addEventListener('change', () => {
+  const f = $('cm-photo-input').files[0];
+  $('cm-photo-name').textContent = f ? f.name : 'Nessuna foto scelta';
+});
+
+$('cm-send').onclick = async () => {
+  if (!currentLocker) return;
+  const testo = $('cm-text').value.trim();
+  const autore = $('cm-name').value.trim();
+  const file = $('cm-photo-input').files[0];
+  if (!testo && !file){ toast('Scrivi qualcosa o aggiungi una foto'); return; }
+
+  const btn = $('cm-send');
+  btn.disabled = true; btn.textContent = 'Invio…';
+  if (autore) lsSet(CM_NAME_KEY, autore);
+
+  try{
+    let foto_url = null;
+    if (file) foto_url = await uploadPhoto(file);
+    const row = { locker_id: currentLocker.id, autore, testo, foto_url };
+    await submitToSupabase(row, 'comments');
+    saveMyComment({ ...row, created_at: new Date().toISOString() });
+    toast('Commento inviato: sarà visibile a tutti dopo l\'approvazione ✅', 3500);
+    resetCommentForm();
+    loadComments(currentLocker.id);
+  }catch(e){
+    toast('Invio non riuscito: controlla la connessione e riprova', 3500);
+    btn.disabled = false; btn.textContent = 'Invia commento';
+  }
+};
+
+function renderAddBrands(){
+  const box = $('addBrands');
+  box.innerHTML = '';
+  for (const [key, b] of Object.entries(BRANDS)){
+    if (key === 'altro') continue;
+    const c = document.createElement('button');
+    c.className = 'ab-chip' + (addSelectedBrand === key ? ' sel' : '');
+    c.innerHTML = `<span class="dot" style="background:${b.color}"></span>${b.name}`;
+    c.onclick = () => { addSelectedBrand = key; renderAddBrands(); };
+    box.appendChild(c);
+  }
+}
+
+function openAddForm(){
+  $('add-name').value = '';
+  $('add-addr').value = '';
+  renderAddBrands();
+  const c = map.getCenter();
+  $('addCoords').textContent = `📍 ${c.lat.toFixed(5)}, ${c.lng.toFixed(5)}`;
+  $('addNoShare').classList.toggle('show', !sbConfig());
+  closePanels();
+  $('addPanel').classList.add('show');
+  $('backdrop').classList.add('show');
+}
+
+// Modalità posizionamento (mirino stile Waze)
+let placing = false;
+$('btnAdd').onclick = () => {
+  placing = true;
+  $('crosshair').classList.add('show');
+  $('placeBar').classList.add('show');
+  $('btnAdd').style.display = 'none';
+  $('btnList').style.display = 'none';
+};
+function exitPlacing(){
+  placing = false;
+  $('crosshair').classList.remove('show');
+  $('placeBar').classList.remove('show');
+  $('btnAdd').style.display = 'flex';
+  $('btnList').style.display = 'flex';
+}
+$('placeCancel').onclick = exitPlacing;
+$('placeConfirm').onclick = () => { exitPlacing(); openAddForm(); };
+
+$('addSubmit').onclick = async () => {
+  const c = map.getCenter();
+  const name = $('add-name').value.trim();
+  const addr = $('add-addr').value.trim();
+  if (!name){ toast('Aggiungi almeno un nome per il punto'); return; }
+
+  const btn = $('addSubmit');
+  btn.disabled = true; btn.textContent = 'Pubblico…';
+
+  const point = {
+    id: 'mine/' + Date.now(),
+    lat: c.lat, lon: c.lng,
+    brand: addSelectedBrand,
+    tags: { name, 'addr:street': addr, 'addr:city':'' }
+  };
+
+  if (sbConfig()){
+    try{
+      await submitToSupabase({
+        brand: BRANDS[addSelectedBrand].name,
+        nome: name, via: addr, citta: '',
+        lat: c.lat, lon: c.lng, orari: ''
+      });
+      // Resta visibile solo a chi l'ha proposto finché non viene approvato da te in Supabase
+      const mine = loadLocalAdded(); mine.push({ ...point, custom:true, pending:true }); saveLocalAdded(mine);
+      toast('Proposta inviata: sarà visibile a tutti dopo l\'approvazione ✅', 3800);
+      closePanels();
+      lockers = mergeCustom(lockers, fetchLocalAdded(ROME_BBOX));
+      renderChips(); renderMarkers();
+    }catch(e){
+      toast('Invio al registro pubblico fallito: salvo solo sul tuo telefono', 3500);
+      const mine = loadLocalAdded(); mine.push({ ...point, custom:true }); saveLocalAdded(mine);
+      closePanels();
+      lockers = mergeCustom(lockers, fetchLocalAdded(ROME_BBOX));
+      renderChips(); renderMarkers();
+    }
+  } else {
+    const mine = loadLocalAdded(); mine.push({ ...point, custom:true }); saveLocalAdded(mine);
+    toast('Locker salvato sul tuo telefono 📍', 3000);
+    closePanels();
+    lockers = mergeCustom(lockers, fetchLocalAdded(ROME_BBOX));
+    renderChips(); renderMarkers();
+  }
+  btn.disabled = false; btn.textContent = 'Pubblica locker';
+};
+
+// ----- Cache locale: avvio istantaneo e offline -----
+const CACHE_KEY = 'dexlocker-v1';
+const cache = {
+  get(){ try{ return JSON.parse(lsGet(CACHE_KEY)); }catch(e){ return null; } },
+  set(v){ lsSet(CACHE_KEY, JSON.stringify(v)); }
+};
+
+async function load(bbox, label){
+  const firstTime = !loadedOnce;
+  if (firstTime) setLoading(true);
+  $('btnReload').classList.add('spin');
+  try{
+    const isProvince = bbox === ROME_BBOX;
+    // Le fonti viaggiano in parallelo: se una fallisce, bastano le altre
+    const [osmRes, ipRes, sbRes] = await Promise.allSettled([
+      fetchLockers(bbox, isProvince ? 20 : 0),
+      fetchInPost(bbox),
+      fetchSupabaseApproved(bbox)
+    ]);
+    const osm      = osmRes.status === 'fulfilled' ? parseElements(osmRes.value) : [];
+    const official = ipRes.status === 'fulfilled' ? ipRes.value : [];
+    const community = sbRes.status === 'fulfilled' ? sbRes.value : [];
+    if (osmRes.status !== 'fulfilled' && !official.length && !community.length){
+      throw (osmRes.reason || new Error('Nessuna fonte dati raggiungibile'));
+    }
+    const fresh = mergeCustom(mergeCustom(mergeSources(osm, official), community), fetchLocalAdded(bbox));
+    // Non sostituire dati buoni con un risultato peggiore (una fonte momentaneamente giù)
+    if (loadedOnce && fresh.length < lockers.length * 0.5){
+      toast('Una fonte dati è momentaneamente giù: tengo i dati già caricati', 3500);
+      return;
+    }
+    lockers = fresh;
+    loadedOnce = true;
+    renderChips();
+    renderMarkers();
+    $('subtitle').textContent = `${lockers.length.toLocaleString('it-IT')} locker · ${label}`;
+    toast(firstTime
+      ? `Trovati ${lockers.length.toLocaleString('it-IT')} locker 📦${official.length ? ` (${official.length.toLocaleString('it-IT')} da InPost ufficiale)` : ''}`
+      : `Dati aggiornati: ${lockers.length.toLocaleString('it-IT')} locker ✓`);
+    $('btnArea').classList.remove('show');
+    cache.set({ ts: Date.now(), label, lockers });
+  }catch(e){
+    const inSandbox = /claude|anthropic/i.test(location.hostname) || location.protocol === 'blob:';
+    if (inSandbox){
+      toast('L\'anteprima in Claude blocca internet: apri l\'app da Safari 🌐', 6000);
+    } else if (lockers.length){
+      toast('Sei offline: mostro i dati salvati sul telefono 📴', 4000);
+    } else {
+      toast('Errore di rete: controlla la connessione e riprova con ↻', 4000);
+    }
+  }finally{
+    setLoading(false);
+    $('btnReload').classList.remove('spin');
+  }
+}
+
+// ----- Marker -----
+function makeIcon(brandKey){
+  const b = BRANDS[brandKey];
+  return L.divIcon({
+    className:'',
+    html:`<div class="pin" style="background:${b.color};color:${b.text}"><span>${b.letter}</span></div>`,
+    iconSize:[28,28], iconAnchor:[14,26]
+  });
+}
+const icons = {}; Object.keys(BRANDS).forEach(k => icons[k] = makeIcon(k));
+
+function visibleLockers(){
+  return lockers.filter(l => active.has(l.brand) && (!favOnly || favs.has(l.id)));
+}
+
+function renderMarkers(){
+  cluster.clearLayers();
+  for (const k in markerById) delete markerById[k];
+  const ms = [];
+  for (const lk of visibleLockers()){
+    const m = L.marker([lk.lat, lk.lon], { icon: icons[lk.brand] });
+    m.on('click', () => openSheet(lk));
+    markerById[lk.id] = m;
+    ms.push(m);
+  }
+  cluster.addLayers(ms);
+}
+
+// ----- Filtri (chips) -----
+function renderChips(){
+  const counts = {};
+  Object.keys(BRANDS).forEach(k => counts[k] = 0);
+  lockers.forEach(l => counts[l.brand]++);
+
+  const box = $('chips');
+  box.innerHTML = '';
+
+  // Chip preferiti
+  const nFav = lockers.filter(l => favs.has(l.id)).length;
+  const chipFav = document.createElement('button');
+  chipFav.className = 'chip fav' + (favOnly ? ' on' : '');
+  chipFav.innerHTML = `★ Preferiti <span class="n">${nFav}</span>`;
+  chipFav.onclick = () => {
+    favOnly = !favOnly;
+    if (favOnly && nFav === 0){ favOnly = false; toast('Nessun preferito: salva un locker con la ★ nella sua scheda'); return; }
+    renderChips(); renderMarkers();
+  };
+  box.appendChild(chipFav);
+
+  // Chip tutti
+  const allOn = active.size === Object.keys(BRANDS).length;
+  const chipAll = document.createElement('button');
+  chipAll.className = 'chip all' + (allOn ? '' : ' off');
+  chipAll.innerHTML = `Tutti <span class="n">${lockers.length.toLocaleString('it-IT')}</span>`;
+  chipAll.onclick = () => {
+    active = allOn ? new Set() : new Set(Object.keys(BRANDS));
+    renderChips(); renderMarkers();
+  };
+  box.appendChild(chipAll);
+
+  // Chip per brand
+  for (const [key, b] of Object.entries(BRANDS)){
+    if (counts[key] === 0 && loadedOnce) continue;
+    const c = document.createElement('button');
+    c.className = 'chip' + (active.has(key) ? '' : ' off');
+    c.innerHTML = `<span class="dot" style="background:${b.color}"></span>${b.name} <span class="n">${counts[key]}</span>`;
+    c.onclick = () => {
+      active.has(key) ? active.delete(key) : active.add(key);
+      renderChips(); renderMarkers();
+    };
+    box.appendChild(c);
+  }
+}
+
+// ----- Scheda dettaglio -----
+let currentLocker = null;
+
+function formatAddress(tags){
+  const parts = [];
+  if (tags['addr:street']) parts.push(tags['addr:street'] + (tags['addr:housenumber'] ? ' ' + tags['addr:housenumber'] : ''));
+  if (tags['addr:city']) parts.push(tags['addr:city']);
+  return parts.join(', ');
+}
+function formatHours(oh){
+  if (!oh) return null;
+  if (oh.trim() === '24/7') return 'Aperto 24 ore su 24, 7 giorni su 7';
+  return oh
+    .replace(/Mo/g,'Lun').replace(/Tu/g,'Mar').replace(/We/g,'Mer')
+    .replace(/Th/g,'Gio').replace(/Fr/g,'Ven').replace(/Sa/g,'Sab').replace(/Su/g,'Dom')
+    .replace(/;/g,' · ');
+}
+
+function openSheet(lk){
+  currentLocker = lk;
+  const b = BRANDS[lk.brand];
+  const t = lk.tags;
+
+  const badge = $('sh-brand');
+  badge.style.background = b.color + '22';
+  badge.style.color = isDark ? '#F2F3F5' : '#171A21';
+  badge.querySelector('.dot').style.background = b.color;
+  $('sh-brand-name').textContent = b.name;
+
+  $('sh-title').textContent = t.name || t.ref || ('Locker ' + b.name);
+  const addr = formatAddress(t);
+  $('sh-addr').textContent = addr || `Coordinate: ${lk.lat.toFixed(5)}, ${lk.lon.toFixed(5)}`;
+
+  // Distanze: dalla posizione/ricerca, da casa e dal lavoro
+  const distEl = $('sh-dist');
+  const dparts = [];
+  if (userPos || searchPos){
+    const ref = refPoint();
+    dparts.push(`📍 ${fmtDist(haversine(ref, lk))} ${ref.label}`);
+  }
+  if (places.home) dparts.push(`🏠 ${fmtDist(haversine(places.home, lk))} da casa`);
+  if (places.work) dparts.push(`💼 ${fmtDist(haversine(places.work, lk))} dal lavoro`);
+  if (dparts.length){
+    distEl.innerHTML = dparts.join('<br>');
+    distEl.classList.add('show');
+  } else {
+    distEl.classList.remove('show');
+  }
+
+  $('sh-fav').classList.toggle('on', favs.has(lk.id));
+
+  const rows = [];
+  const hours = formatHours(t.opening_hours);
+  if (hours) rows.push({ icon:'<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>', text: hours });
+  if (t.ref)  rows.push({ icon:'<path d="M4 7h16M4 12h16M4 17h10"/>', text: 'Codice: ' + t.ref });
+  if (t.covered === 'yes' || t.indoor === 'yes') rows.push({ icon:'<path d="M3 11l9-7 9 7"/><path d="M5 10v10h14V10"/>', text:'Al coperto' });
+  if (t.note) rows.push({ icon:'<path d="M12 8v5M12 16.5v.5"/><circle cx="12" cy="12" r="9"/>', text: t.note });
+  if (lk.official) rows.push({ icon:'<path d="M20 6L9 17l-5-5"/>', text:'Dato ufficiale InPost' });
+  if (lk.custom) rows.push({ icon:'<path d="M4 4h16v16H4z"/><path d="M4 9h16M9 9v11"/>', text:'Dalla tua fonte personale' });
+  if (lk.community) rows.push({ icon:'<path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/>', text:'Aggiunto da un utente · approvato ✓' });
+  if (lk.pending) rows.push({ icon:'<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>', text:'In attesa di approvazione (solo tu la vedi)' });
+  else if (lk.mine) rows.push({ icon:'<path d="M12 5v14M5 12h14"/>', text:'Aggiunto da te (solo su questo telefono)' });
+  $('sh-rows').innerHTML = rows.map(r =>
+    `<div class="sh-row"><svg viewBox="0 0 24 24">${r.icon}</svg><span>${r.text}</span></div>`
+  ).join('');
+
+  $('sh-google').href = `https://www.google.com/maps/dir/?api=1&destination=${lk.lat},${lk.lon}&travelmode=driving`;
+  $('sh-apple').href  = `https://maps.apple.com/?daddr=${lk.lat},${lk.lon}`;
+
+  resetCommentForm();
+  loadComments(lk.id);
+
+  closePanels();
+  $('sheet').classList.add('show');
+  $('backdrop').classList.add('show');
+  $('sheet').style.borderTopColor = b.color;
+}
+
+$('sh-fav').onclick = () => {
+  if (!currentLocker) return;
+  const id = currentLocker.id;
+  if (favs.has(id)){ favs.delete(id); toast('Rimosso dai preferiti'); }
+  else { favs.add(id); toast('Salvato nei preferiti ★'); }
+  saveFavs();
+  $('sh-fav').classList.toggle('on', favs.has(id));
+  renderChips();
+  if (favOnly) renderMarkers();
+};
+
+function closePanels(){
+  $('sheet').classList.remove('show');
+  $('listPanel').classList.remove('show');
+  $('settingsPanel').classList.remove('show');
+  $('addPanel').classList.remove('show');
+  $('backdrop').classList.remove('show');
+}
+$('backdrop').onclick = closePanels;
+for (const pid of ['sheet','listPanel','settingsPanel','addPanel']){
+  let touchY = null;
+  const el = $(pid);
+  el.addEventListener('touchstart', e => touchY = e.touches[0].clientY, {passive:true});
+  el.addEventListener('touchmove', e => {
+    if (el.scrollTop > 0) return;   // non chiudere mentre si scorre il contenuto del pannello
+    if (touchY !== null && e.touches[0].clientY - touchY > 70){ closePanels(); touchY = null; }
+  }, {passive:true});
+}
+
+// ----- Lista locker più vicini -----
+let listMode = 'auto';   // 'auto' (posizione/ricerca) | 'home' | 'work'
+
+function renderLrefChips(){
+  $('lref').querySelectorAll('.lref-chip').forEach(ch => {
+    const m = ch.dataset.m;
+    ch.classList.toggle('on', listMode === m);
+    ch.classList.toggle('unset', (m === 'home' && !places.home) || (m === 'work' && !places.work));
+  });
+}
+
+function openList(){
+  if (!lockers.length){ toast('Nessun dato ancora: attendi il caricamento'); return; }
+  const ref = refPointFor(listMode);
+  const items = visibleLockers()
+    .map(l => ({ l, d: haversine(ref, l) }))
+    .sort((a,b) => a.d - b.d)
+    .slice(0, 30);
+
+  renderLrefChips();
+  $('listRef').textContent = `Distanze ${ref.label}` + (favOnly ? ' · solo preferiti' : '');
+  $('listRows').innerHTML = items.length ? items.map(({l, d}) => {
+    const b = BRANDS[l.brand];
+    const name = l.tags.name || l.tags.ref || ('Locker ' + b.name);
+    const addr = formatAddress(l.tags) || b.name;
+    const star = favs.has(l.id) ? '<span class="fav">★ </span>' : '';
+    return `<div class="lp-row" data-id="${l.id}">
+      <span class="lp-dot" style="background:${b.color}"></span>
+      <div class="lp-main">
+        <div class="lp-name">${star}${name}</div>
+        <div class="lp-addr">${addr}</div>
+      </div>
+      <span class="lp-dist">${fmtDist(d)}</span>
+    </div>`;
+  }).join('') : '<div class="lp-empty">Nessun locker con i filtri attuali</div>';
+
+  $('listRows').querySelectorAll('.lp-row').forEach(row => {
+    row.onclick = () => {
+      const lk = lockers.find(l => l.id === row.dataset.id);
+      if (!lk) return;
+      map.setView([lk.lat, lk.lon], 17);
+      openSheet(lk);
+    };
+  });
+
+  $('sheet').classList.remove('show');
+  $('listPanel').classList.add('show');
+  $('backdrop').classList.add('show');
+  $('listRows').scrollTop = 0;
+}
+$('btnList').onclick = openList;
+$('lref').querySelectorAll('.lref-chip').forEach(ch => {
+  ch.onclick = () => {
+    const m = ch.dataset.m;
+    if (m === 'home' && !places.home){ toast('Imposta prima Casa in ⚙️ Impostazioni'); return; }
+    if (m === 'work' && !places.work){ toast('Imposta prima Lavoro in ⚙️ Impostazioni'); return; }
+    listMode = m;
+    openList();
+  };
+});
+
+// ----- Ricerca indirizzo / CAP (Nominatim) -----
+const sInput = $('searchInput'), sResults = $('searchResults');
+
+function shortName(displayName){
+  const parts = displayName.split(',').map(s => s.trim());
+  return parts.slice(0, 3).join(', ');
+}
+function hideResults(){ sResults.classList.remove('show'); }
+
+$('searchForm').addEventListener('submit', async e => {
+  e.preventDefault();
+  const q = sInput.value.trim();
+  if (!q) return;
+  sInput.blur();
+  sResults.innerHTML = '<div class="sr-item muted">Cerco…</div>';
+  sResults.classList.add('show');
+  try{
+    const url = `https://nominatim.openstreetmap.org/search?format=json&limit=5&countrycodes=it&q=${encodeURIComponent(q)}`;
+    const r = await fetch(url, { headers:{ 'Accept':'application/json' } });
+    const res = await r.json();
+    if (!res.length){
+      sResults.innerHTML = '<div class="sr-item muted">Nessun risultato: prova ad aggiungere la città (es. "Via Tiburtina, Guidonia")</div>';
+      return;
+    }
+    sResults.innerHTML = res.map((it, i) =>
+      `<div class="sr-item" data-i="${i}">
+        <svg viewBox="0 0 24 24"><path d="M12 21s-7-6.1-7-11a7 7 0 0 1 14 0c0 4.9-7 11-7 11z"/></svg>
+        <span>${shortName(it.display_name)}<span class="sub">${it.display_name.split(',').slice(3,6).join(',').trim()}</span></span>
+      </div>`
+    ).join('');
+    sResults.querySelectorAll('.sr-item').forEach(el => {
+      el.onclick = () => {
+        const it = res[+el.dataset.i];
+        selectPlace(+it.lat, +it.lon, shortName(it.display_name));
+      };
+    });
+  }catch(err){
+    sResults.innerHTML = '<div class="sr-item muted">Errore di rete nella ricerca: riprova</div>';
+  }
+});
+
+function selectPlace(lat, lon, label){
+  hideResults();
+  searchPos = { lat, lon, label };
+  userPos = null;   // il punto cercato diventa il riferimento per le distanze
+  if (searchMarker) map.removeLayer(searchMarker);
+  searchMarker = L.marker([lat, lon], {
+    icon: L.divIcon({ className:'', html:'<div class="pin searched"><span>✦</span></div>', iconSize:[28,28], iconAnchor:[14,26] }),
+    zIndexOffset: 900
+  }).addTo(map);
+  map.setView([lat, lon], 15);
+  openList();       // mostra subito i locker più vicini all'indirizzo
+}
+
+$('searchClear').onclick = () => {
+  sInput.value = '';
+  $('searchClear').classList.remove('show');
+  hideResults();
+  if (searchMarker){ map.removeLayer(searchMarker); searchMarker = null; }
+  searchPos = null;
+  sInput.focus();
+};
+sInput.addEventListener('input', () => {
+  $('searchClear').classList.toggle('show', sInput.value.length > 0);
+  if (!sInput.value) hideResults();
+});
+map.on('click', hideResults);
+
+// ----- Geolocalizzazione -----
+$('btnLocate').onclick = () => {
+  if (!navigator.geolocation){ toast('Geolocalizzazione non disponibile'); return; }
+  toast('Cerco la tua posizione…', 1800);
+  navigator.geolocation.getCurrentPosition(
+    pos => {
+      const { latitude:lat, longitude:lon } = pos.coords;
+      userPos = { lat, lon };
+      if (meMarker) map.removeLayer(meMarker);
+      meMarker = L.marker([lat, lon], {
+        icon: L.divIcon({ className:'', html:'<div class="me-dot"></div>', iconSize:[18,18], iconAnchor:[9,9] }),
+        zIndexOffset: 1000
+      }).addTo(map);
+      map.setView([lat, lon], 15);
+    },
+    () => toast('Impossibile ottenere la posizione: controlla i permessi', 3200),
+    { enableHighAccuracy:true, timeout:10000 }
+  );
+};
+
+// ----- Ricarica e ricerca in area -----
+$('btnReload').onclick = () => load(ROME_BBOX, 'Roma e provincia');
+
+$('btnArea').onclick = () => {
+  const b = map.getBounds();
+  const bbox = [b.getSouth(), b.getWest(), b.getNorth(), b.getEast()].map(v => v.toFixed(4)).join(',');
+  load(bbox, 'area visualizzata');
+};
+
+const romeBounds = L.latLngBounds([41.40,11.73],[42.30,13.30]);
+map.on('moveend', () => {
+  if (!loadedOnce) return;
+  $('btnArea').classList.toggle('show', !romeBounds.contains(map.getCenter()));
+});
+
+// ----- Menu sviluppatore (nascosto, protetto da password) -----
+// ⚠️ Cambia questa password prima di pubblicare l'app: chiunque legga il codice
+// sorgente della pagina può vederla. È un filtro contro l'uso accidentale da
+// parte degli utenti normali, non una vera protezione crittografica.
+const DEV_PASSWORD = 'Scatto2026';
+const DEV_UNLOCKED_KEY = 'dexlocker-dev-unlocked';
+
+function devIsUnlocked(){ return lsGet(DEV_UNLOCKED_KEY) === '1'; }
+function refreshDevSection(){
+  $('devSection').style.display = devIsUnlocked() ? 'block' : 'none';
+}
+
+let versionTaps = 0, versionTapTimer = null;
+$('set-version').style.cursor = 'default';
+$('set-version').addEventListener('click', () => {
+  if (devIsUnlocked()) return;   // già sbloccato, niente da fare
+  versionTaps++;
+  clearTimeout(versionTapTimer);
+  versionTapTimer = setTimeout(() => { versionTaps = 0; }, 2000);
+  if (versionTaps >= 5){
+    versionTaps = 0;
+    const pwd = prompt('Password sviluppatore:');
+    if (pwd === null) return;
+    if (pwd === DEV_PASSWORD){
+      lsSet(DEV_UNLOCKED_KEY, '1');
+      refreshDevSection();
+      toast('🛠 Modalità sviluppatore sbloccata');
+    } else {
+      toast('Password errata');
+    }
+  }
+});
+$('set-devlock').onclick = () => {
+  lsSet(DEV_UNLOCKED_KEY, '0');
+  refreshDevSection();
+  toast('Modalità sviluppatore bloccata');
+};
+
+// ----- Impostazioni -----
+function openSettings(){
+  $('set-version').textContent = 'v' + APP_VERSION;
+  $('set-count').textContent = lockers.length.toLocaleString('it-IT');
+  $('set-inpost').textContent = lockers.filter(l => l.official).length.toLocaleString('it-IT');
+  const c = cache.get();
+  $('set-updated').textContent = c?.ts
+    ? new Date(c.ts).toLocaleString('it-IT', { day:'2-digit', month:'2-digit', hour:'2-digit', minute:'2-digit' })
+    : '—';
+  $('set-favs').textContent = favs.size;
+  refreshDevSection();
+  if (devIsUnlocked()){
+    $('set-sburl').value = lsGet(SB_URL_KEY) || '';
+    $('set-sbkey').value = lsGet(SB_KEY_KEY) || '';
+  }
+  for (const k in PLACES){
+    $(`set-${k}-cur`).textContent = places[k]
+      ? `${PLACES[k].emoji} ${places[k].label}`
+      : (k === 'home' ? 'Non impostata' : 'Non impostato');
+  }
+  try{
+    const ip = JSON.parse(lsGet(IP_CACHE_KEY));
+    $('set-ipdate').textContent = ip?.ts
+      ? new Date(ip.ts).toLocaleString('it-IT', { day:'2-digit', month:'2-digit', hour:'2-digit', minute:'2-digit' })
+      : '—';
+  }catch(e){ $('set-ipdate').textContent = '—'; }
+  closePanels();
+  $('settingsPanel').classList.add('show');
+  $('backdrop').classList.add('show');
+}
+$('btnSettings').onclick = openSettings;
+
+$('set-sbsave').onclick = () => {
+  const url = $('set-sburl').value.trim().replace(/\/$/, '');
+  const key = $('set-sbkey').value.trim();
+  if (url && !/^https:\/\/.+\.supabase\.co$/.test(url)){
+    toast('URL non valido: deve essere tipo https://xxxxx.supabase.co'); return;
+  }
+  lsSet(SB_URL_KEY, url);
+  lsSet(SB_KEY_KEY, key);
+  try{ localStorage.removeItem(CACHE_KEY); }catch(e){}
+  closePanels();
+  toast(url && key ? 'Registro pubblico Supabase collegato ✓' : 'Registro pubblico Supabase scollegato');
+  load(ROME_BBOX, 'Roma e provincia');
+};
+
+for (const k in PLACES){
+  $(`set-${k}-save`).onclick = async () => {
+    const q = $(`set-${k}`).value.trim();
+    if (!q){ savePlace(k, null); openSettings(); toast(`${PLACES[k].emoji} ${PLACES[k].nome} rimosso/a`); return; }
+    $(`set-${k}-cur`).textContent = 'Cerco l\'indirizzo…';
+    try{
+      const p = await geocodeFirst(q);
+      if (!p){ $(`set-${k}-cur`).textContent = 'Indirizzo non trovato: aggiungi la città'; return; }
+      savePlace(k, p);
+      $(`set-${k}`).value = '';
+      openSettings();
+      toast(`${PLACES[k].emoji} ${PLACES[k].nome} salvato/a: ${p.label}`, 3200);
+    }catch(e){ $(`set-${k}-cur`).textContent = 'Errore di rete: riprova'; }
+  };
+  $(`set-${k}-gps`).onclick = () => {
+    if (!navigator.geolocation){ toast('Geolocalizzazione non disponibile'); return; }
+    $(`set-${k}-cur`).textContent = 'Rilevo la posizione…';
+    navigator.geolocation.getCurrentPosition(
+      pos => {
+        savePlace(k, { lat: pos.coords.latitude, lon: pos.coords.longitude, label: 'Posizione attuale salvata' });
+        openSettings();
+        toast(`${PLACES[k].emoji} ${PLACES[k].nome}: posizione attuale salvata`);
+      },
+      () => { $(`set-${k}-cur`).textContent = 'Posizione non disponibile: controlla i permessi'; },
+      { enableHighAccuracy:true, timeout:10000 }
+    );
+  };
+}
+
+$('set-clearcache').onclick = () => {
+  try{ localStorage.removeItem(CACHE_KEY); }catch(e){}
+  lockers = [];
+  loadedOnce = false;
+  cluster.clearLayers();
+  renderChips();
+  closePanels();
+  toast('Cache svuotata: riscarico i dati…');
+  load(ROME_BBOX, 'Roma e provincia');
+};
+
+$('set-refreship').onclick = () => {
+  try{ localStorage.removeItem(IP_CACHE_KEY); }catch(e){}
+  try{ localStorage.removeItem(CACHE_KEY); }catch(e){}
+  lockers = [];
+  loadedOnce = false;         // mostra il loader con l'avanzamento della scansione
+  cluster.clearLayers();
+  renderChips();
+  closePanels();
+  $('loaderText').textContent = 'Scarico la rete InPost ufficiale…';
+  load(ROME_BBOX, 'Roma e provincia');
+};
+
+$('set-reloadapp').onclick = () => {
+  // Ricarica forzata aggirando la cache del browser: utile dopo un aggiornamento
+  const u = new URL(location.href);
+  u.searchParams.set('r', Date.now());
+  location.replace(u.toString());
+};
+
+$('set-clearmine').onclick = () => {
+  const nMine = loadLocalAdded().length;
+  const nMineC = loadMyComments().length;
+  if (!nMine && !nMineC){ toast('Non hai proposte in attesa salvate sul telefono'); return; }
+  if (!confirm(`Rimuovere ${nMine} locker e ${nMineC} commenti proposti da te? Se sono già stati approvati o rifiutati su Supabase, questo non li tocca lì: pulisce solo la copia "in attesa" salvata su questo telefono.`)) return;
+  saveLocalAdded([]);
+  lsSet(MY_COMMENTS_KEY, '[]');
+  try{ localStorage.removeItem(CACHE_KEY); }catch(e){}
+  closePanels();
+  toast('Proposte in attesa rimosse dal telefono');
+  load(ROME_BBOX, 'Roma e provincia');
+};
+
+$('set-clearfavs').onclick = () => {
+  if (!favs.size){ toast('Non hai preferiti salvati'); return; }
+  if (!confirm(`Cancellare tutti i ${favs.size} preferiti? L'operazione non si può annullare.`)) return;
+  favs.clear();
+  saveFavs();
+  favOnly = false;
+  renderChips(); renderMarkers();
+  openSettings();   // aggiorna il contatore nel pannello
+  toast('Preferiti cancellati');
+};
+
+// Su iOS la tastiera può coprire il campo appena toccato: lo riporto in vista
+document.querySelectorAll('.panel input, .panel textarea').forEach(inp => {
+  inp.addEventListener('focus', () => {
+    setTimeout(() => inp.scrollIntoView({ block:'center', behavior:'smooth' }), 300);
+  });
+});
+
+// ----- Avvio -----
+loadPlaces();
+renderPlaceMarkers();
+const saved = cache.get();
+if (saved && Array.isArray(saved.lockers) && saved.lockers.length){
+  lockers = saved.lockers;
+  loadedOnce = true;
+  renderChips();
+  renderMarkers();
+  $('subtitle').textContent = `${lockers.length.toLocaleString('it-IT')} locker · ${saved.label || 'dati salvati'}`;
+}
+load(ROME_BBOX, 'Roma e provincia');
+</script>
+</body>
+</html>
