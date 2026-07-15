@@ -253,7 +253,7 @@
   }
   #toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
 
-  /* ---------- Pannelli (sheet dettaglio + lista vicini) ---------- */
+  /* ---------- Pannelli (sheet dettaglio + lista vicini + impostazioni) ---------- */
   #backdrop{
     position:fixed;inset:0;z-index:1000;background:rgba(10,12,18,.4);
     opacity:0;pointer-events:none;transition:opacity .25s ease;
@@ -265,6 +265,12 @@
     box-shadow:0 -10px 40px rgba(0,0,0,.3);
     padding:10px 20px calc(22px + env(safe-area-inset-bottom));
     transform:translateY(105%);transition:transform .3s cubic-bezier(.32,.72,.28,1);
+    /* Mai più alto dello schermo visibile: resta sempre sotto la barra del browser
+       e, se il contenuto è lungo, scorre internamente invece di essere tagliato */
+    max-height:min(88dvh, calc(100dvh - env(safe-area-inset-top) - 28px));
+    overflow-y:auto;
+    -webkit-overflow-scrolling:touch;
+    overscroll-behavior:contain;
   }
   .panel.show{transform:translateY(0)}
   .grab{width:40px;height:4px;border-radius:2px;background:var(--line);margin:2px auto 14px}
@@ -308,7 +314,7 @@
   /* Lista vicini */
   #listTitle{font-size:17px;font-weight:800;letter-spacing:-.02em}
   #listRef{font-size:12px;color:var(--ink-2);font-weight:500;margin:2px 0 8px}
-  #listRows{max-height:56dvh;overflow-y:auto;-webkit-overflow-scrolling:touch;overscroll-behavior:contain}
+  #listRows{}
   .lp-row{
     display:flex;align-items:center;gap:12px;padding:13px 2px;
     border-bottom:1px solid var(--line);cursor:pointer;
@@ -324,16 +330,29 @@
   .lp-empty{padding:26px 0;text-align:center;color:var(--ink-2);font-size:14px;font-weight:500}
 
   /* Impostazioni */
-  #setTitle{font-size:17px;font-weight:800;letter-spacing:-.02em;margin-bottom:12px;display:flex;align-items:center;gap:8px}
+  #setTitle{
+    font-size:17px;font-weight:800;letter-spacing:-.02em;
+    display:flex;align-items:center;gap:8px;
+    position:sticky;top:0;background:var(--surface);
+    padding-bottom:12px;z-index:2;
+  }
+  .set-section{
+    font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.04em;
+    color:var(--ink-2);margin:18px 0 8px;
+  }
+  .set-section:first-of-type{margin-top:4px}
   .set-info{
     background:var(--bg);border:1.5px solid var(--line);border-radius:14px;
-    padding:12px 14px;margin-bottom:14px;
+    padding:6px 14px;margin-bottom:6px;
   }
+  .set-info-grid{display:flex;flex-wrap:wrap}
+  .set-info-grid .set-info-row{width:50%;box-sizing:border-box}
+  .set-info-grid .set-info-row.full{width:100%}
   .set-info-row{
-    display:flex;justify-content:space-between;gap:12px;
-    font-size:13px;font-weight:500;color:var(--ink-2);padding:4px 0;
+    display:flex;flex-direction:column;gap:1px;
+    font-size:11px;font-weight:600;color:var(--ink-2);padding:7px 6px 7px 0;
   }
-  .set-info-row b{color:var(--ink);font-weight:700;text-align:right}
+  .set-info-row b{color:var(--ink);font-weight:800;font-size:13px}
   .set-btn{
     width:100%;padding:14px;border-radius:14px;cursor:pointer;margin-bottom:10px;
     border:1.5px solid var(--line);background:var(--surface);color:var(--ink);
@@ -343,6 +362,7 @@
   .set-btn:active{transform:scale(.97)}
   .set-btn svg{width:17px;height:17px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
   .set-btn.danger{color:var(--danger);border-color:color-mix(in srgb, var(--danger) 40%, var(--line))}
+  .set-btn.primary{background:var(--accent);border-color:var(--accent);color:var(--accent-ink);margin-top:8px}
   .set-note{font-size:11px;color:var(--ink-2);font-weight:500;text-align:center;margin-top:4px}
   .set-field{margin-bottom:14px}
   .set-field label{display:block;font-size:12px;font-weight:700;color:var(--ink-2);margin-bottom:6px}
@@ -354,6 +374,7 @@
     font-family:inherit;font-size:16px;font-weight:500;outline:none;
     -webkit-user-select:text;user-select:text;
   }
+  .fld-input.full{width:100%}
   .fld-btn{
     height:42px;padding:0 14px;border-radius:12px;border:none;cursor:pointer;
     background:var(--accent);color:var(--accent-ink);font-family:inherit;font-size:14px;font-weight:800;
@@ -531,26 +552,18 @@
 <div id="settingsPanel" class="panel" role="dialog" aria-modal="true">
   <div class="grab"></div>
   <div id="setTitle">⚙️ Impostazioni</div>
-  <div class="set-info">
-    <div class="set-info-row"><span>Versione app</span><b id="set-version"></b></div>
+
+  <div class="set-section">Stato dell'app</div>
+  <div class="set-info set-info-grid">
+    <div class="set-info-row"><span>Versione</span><b id="set-version"></b></div>
+    <div class="set-info-row"><span>Preferiti</span><b id="set-favs"></b></div>
     <div class="set-info-row"><span>Locker caricati</span><b id="set-count"></b></div>
-    <div class="set-info-row"><span>Da rete ufficiale InPost</span><b id="set-inpost"></b></div>
-    <div class="set-info-row"><span>Rete InPost scaricata il</span><b id="set-ipdate"></b></div>
-    <div class="set-info-row"><span>Ultimo aggiornamento dati</span><b id="set-updated"></b></div>
-    <div class="set-info-row"><span>Preferiti salvati</span><b id="set-favs"></b></div>
+    <div class="set-info-row"><span>Da InPost ufficiale</span><b id="set-inpost"></b></div>
+    <div class="set-info-row full"><span>Dati aggiornati il</span><b id="set-updated"></b></div>
+    <div class="set-info-row full"><span>Rete InPost scaricata il</span><b id="set-ipdate"></b></div>
   </div>
-  <div class="set-field">
-    <label for="set-sburl">🌐 Registro pubblico (Supabase) — Project URL</label>
-    <input class="fld-input" id="set-sburl" type="url" placeholder="https://xxxxx.supabase.co" autocomplete="off" style="width:100%">
-  </div>
-  <div class="set-field">
-    <label for="set-sbkey">Chiave pubblica (anon key)</label>
-    <div class="set-field-row">
-      <input class="fld-input" id="set-sbkey" type="text" placeholder="eyJ…" autocomplete="off">
-      <button class="fld-btn" id="set-sbsave">Salva</button>
-    </div>
-    <div class="set-hint">I locker proposti con "+" restano in attesa di approvazione (dalla dashboard Supabase) prima di comparire a tutti gli utenti. Guida completa: vedi "guida-supabase.md"</div>
-  </div>
+
+  <div class="set-section">I tuoi luoghi</div>
   <div class="set-field">
     <label for="set-home">🏠 Casa</label>
     <div class="set-field-row">
@@ -569,6 +582,8 @@
     </div>
     <div class="set-hint" id="set-work-cur">Non impostato</div>
   </div>
+
+  <div class="set-section">Manutenzione</div>
   <button class="set-btn" id="set-clearcache">
     <svg viewBox="0 0 24 24"><path d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6"/><path d="M10 11v6M14 11v6"/></svg>
     Svuota cache e riscarica i dati
@@ -586,6 +601,24 @@
     Cancella tutti i preferiti
   </button>
   <div class="set-note">Dati: OpenStreetMap · La cache rende l'avvio istantaneo e permette l'uso offline</div>
+
+  <div id="devSection" style="display:none">
+    <div class="set-section">🛠 Sviluppatore</div>
+    <div class="set-field">
+      <label for="set-sburl">Registro pubblico (Supabase) — Project URL</label>
+      <input class="fld-input full" id="set-sburl" type="url" placeholder="https://xxxxx.supabase.co" autocomplete="off">
+    </div>
+    <div class="set-field">
+      <label for="set-sbkey">Chiave pubblica (anon key)</label>
+      <input class="fld-input full" id="set-sbkey" type="text" placeholder="eyJ…" autocomplete="off">
+      <button class="set-btn primary" id="set-sbsave">Salva registro pubblico</button>
+      <div class="set-hint">I locker proposti con "+" restano in attesa di approvazione (dalla dashboard Supabase) prima di comparire a tutti gli utenti. Guida completa: "guida-supabase.md"</div>
+    </div>
+    <button class="set-btn" id="set-devlock">
+      <svg viewBox="0 0 24 24"><rect x="4" y="10" width="16" height="10" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></svg>
+      Blocca modalità sviluppatore
+    </button>
+  </div>
 </div>
 
 <!-- Aggiungi locker -->
@@ -615,7 +648,7 @@
    Geocoding: Nominatim (OpenStreetMap)
    ============================================================ */
 
-const APP_VERSION = '3.6';
+const APP_VERSION = '3.9';
 const ROME_BBOX = '41.40,11.73,42.30,13.30';
 
 const OVERPASS_ENDPOINTS = [
@@ -667,7 +700,7 @@ function saveFavs(){ lsSet('dexlocker-favs-v1', JSON.stringify([...favs])); }
 // ----- Mappa -----
 const isDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
 const map = L.map('map', { zoomControl:false, attributionControl:true }).setView([41.9028, 12.4964], 11);
-L.control.zoom({ position:'bottomright' }).addTo(map);
+L.control.zoom({ position:'topright' }).addTo(map);
 
 L.tileLayer(
   isDark
@@ -1304,8 +1337,7 @@ for (const pid of ['sheet','listPanel','settingsPanel','addPanel']){
   const el = $(pid);
   el.addEventListener('touchstart', e => touchY = e.touches[0].clientY, {passive:true});
   el.addEventListener('touchmove', e => {
-    const scroller = pid === 'listPanel' ? $('listRows') : null;
-    if (scroller && scroller.scrollTop > 0) return;   // non chiudere mentre si scorre la lista
+    if (el.scrollTop > 0) return;   // non chiudere mentre si scorre il contenuto del pannello
     if (touchY !== null && e.touches[0].clientY - touchY > 70){ closePanels(); touchY = null; }
   }, {passive:true});
 }
@@ -1474,6 +1506,44 @@ map.on('moveend', () => {
   $('btnArea').classList.toggle('show', !romeBounds.contains(map.getCenter()));
 });
 
+// ----- Menu sviluppatore (nascosto, protetto da password) -----
+// ⚠️ Cambia questa password prima di pubblicare l'app: chiunque legga il codice
+// sorgente della pagina può vederla. È un filtro contro l'uso accidentale da
+// parte degli utenti normali, non una vera protezione crittografica.
+const DEV_PASSWORD = 'Scatto2026';
+const DEV_UNLOCKED_KEY = 'dexlocker-dev-unlocked';
+
+function devIsUnlocked(){ return lsGet(DEV_UNLOCKED_KEY) === '1'; }
+function refreshDevSection(){
+  $('devSection').style.display = devIsUnlocked() ? 'block' : 'none';
+}
+
+let versionTaps = 0, versionTapTimer = null;
+$('set-version').style.cursor = 'default';
+$('set-version').addEventListener('click', () => {
+  if (devIsUnlocked()) return;   // già sbloccato, niente da fare
+  versionTaps++;
+  clearTimeout(versionTapTimer);
+  versionTapTimer = setTimeout(() => { versionTaps = 0; }, 2000);
+  if (versionTaps >= 5){
+    versionTaps = 0;
+    const pwd = prompt('Password sviluppatore:');
+    if (pwd === null) return;
+    if (pwd === DEV_PASSWORD){
+      lsSet(DEV_UNLOCKED_KEY, '1');
+      refreshDevSection();
+      toast('🛠 Modalità sviluppatore sbloccata');
+    } else {
+      toast('Password errata');
+    }
+  }
+});
+$('set-devlock').onclick = () => {
+  lsSet(DEV_UNLOCKED_KEY, '0');
+  refreshDevSection();
+  toast('Modalità sviluppatore bloccata');
+};
+
 // ----- Impostazioni -----
 function openSettings(){
   $('set-version').textContent = 'v' + APP_VERSION;
@@ -1484,8 +1554,11 @@ function openSettings(){
     ? new Date(c.ts).toLocaleString('it-IT', { day:'2-digit', month:'2-digit', hour:'2-digit', minute:'2-digit' })
     : '—';
   $('set-favs').textContent = favs.size;
-  $('set-sburl').value = lsGet(SB_URL_KEY) || '';
-  $('set-sbkey').value = lsGet(SB_KEY_KEY) || '';
+  refreshDevSection();
+  if (devIsUnlocked()){
+    $('set-sburl').value = lsGet(SB_URL_KEY) || '';
+    $('set-sbkey').value = lsGet(SB_KEY_KEY) || '';
+  }
   for (const k in PLACES){
     $(`set-${k}-cur`).textContent = places[k]
       ? `${PLACES[k].emoji} ${places[k].label}`
@@ -1586,6 +1659,13 @@ $('set-clearfavs').onclick = () => {
   openSettings();   // aggiorna il contatore nel pannello
   toast('Preferiti cancellati');
 };
+
+// Su iOS la tastiera può coprire il campo appena toccato: lo riporto in vista
+document.querySelectorAll('.panel input').forEach(inp => {
+  inp.addEventListener('focus', () => {
+    setTimeout(() => inp.scrollIntoView({ block:'center', behavior:'smooth' }), 300);
+  });
+});
 
 // ----- Avvio -----
 loadPlaces();
