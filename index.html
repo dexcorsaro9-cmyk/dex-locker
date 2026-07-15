@@ -190,6 +190,44 @@
   #btnList:active{transform:scale(.95)}
   #btnList svg{width:17px;height:17px;stroke:var(--accent);fill:none;stroke-width:2.5;stroke-linecap:round}
 
+  #btnAdd{
+    position:absolute;bottom:calc(20px + env(safe-area-inset-bottom));right:14px;z-index:800;
+    width:52px;height:52px;border-radius:50%;border:none;cursor:pointer;
+    background:var(--accent);color:var(--accent-ink);
+    box-shadow:var(--shadow);display:flex;align-items:center;justify-content:center;
+  }
+  #btnAdd:active{transform:scale(.92)}
+  #btnAdd svg{width:24px;height:24px;stroke:currentColor;fill:none;stroke-width:2.6;stroke-linecap:round}
+
+  /* Modalità posizionamento (mirino stile Waze) */
+  #crosshair{
+    position:absolute;top:50%;left:50%;transform:translate(-50%,-100%);
+    z-index:850;display:none;pointer-events:none;
+    filter:drop-shadow(0 3px 8px rgba(0,0,0,.4));
+  }
+  #crosshair.show{display:block}
+  #crosshair .stem{width:3px;height:14px;background:var(--accent);margin:0 auto}
+  #crosshair .head{
+    width:34px;height:34px;border-radius:50% 50% 50% 4px;transform:rotate(-45deg);
+    background:var(--accent);border:3px solid #fff;
+    display:flex;align-items:center;justify-content:center;
+  }
+  #crosshair .head span{transform:rotate(45deg);font-size:15px}
+
+  #placeBar{
+    position:absolute;top:12px;left:50%;transform:translateX(-50%);z-index:800;
+    display:none;align-items:center;gap:10px;
+    background:var(--ink);color:var(--bg);padding:9px 10px 9px 16px;border-radius:999px;
+    box-shadow:var(--shadow);font-size:13px;font-weight:700;
+  }
+  #placeBar.show{display:flex}
+  #placeBar button{
+    border:none;border-radius:999px;cursor:pointer;font-family:inherit;font-weight:800;font-size:13px;
+    height:34px;padding:0 16px;
+  }
+  #placeBar .go{background:var(--accent);color:var(--accent-ink)}
+  #placeBar .cancel{background:transparent;color:var(--bg);opacity:.7}
+
   #loader{
     position:absolute;inset:0;z-index:900;display:none;
     align-items:center;justify-content:center;flex-direction:column;gap:14px;
@@ -251,7 +289,7 @@
   #sh-fav.on svg{stroke:var(--accent-ink);fill:var(--accent-ink)}
   #sh-fav:active{transform:scale(.92)}
   #sh-addr{font-size:14px;color:var(--ink-2);font-weight:500;line-height:1.45}
-  #sh-dist{font-size:13px;font-weight:800;color:var(--ink);margin-top:6px;display:none}
+  #sh-dist{font-size:13px;font-weight:800;color:var(--ink);margin-top:6px;display:none;line-height:1.6}
   #sh-dist.show{display:block}
   .sh-rows{margin:14px 0 18px;display:flex;flex-direction:column;gap:8px}
   .sh-row{display:flex;gap:9px;align-items:flex-start;font-size:13px;font-weight:500;color:var(--ink)}
@@ -320,6 +358,65 @@
     background:var(--accent);color:var(--accent-ink);font-size:14px;font-weight:800;
   }
   .set-hint{font-size:11px;color:var(--ink-2);font-weight:500;margin-top:6px;line-height:1.4}
+  .fld-input{
+    flex:1;min-width:0;height:42px;border-radius:12px;border:1.5px solid var(--line);
+    background:var(--bg);color:var(--ink);padding:0 12px;
+    font-family:inherit;font-size:16px;font-weight:500;outline:none;
+    -webkit-user-select:text;user-select:text;
+  }
+  .fld-btn{
+    height:42px;padding:0 14px;border-radius:12px;border:none;cursor:pointer;
+    background:var(--accent);color:var(--accent-ink);font-family:inherit;font-size:14px;font-weight:800;
+    flex-shrink:0;
+  }
+  .fld-btn.ghost{background:var(--bg);color:var(--ink);border:1.5px solid var(--line);font-size:16px;padding:0 12px}
+  .fld-btn:active{transform:scale(.95)}
+
+  .place-pin{
+    width:30px;height:30px;border-radius:50%;
+    background:var(--surface);border:2.5px solid var(--accent);
+    display:flex;align-items:center;justify-content:center;font-size:14px;
+    box-shadow:0 2px 8px rgba(0,0,0,.3);
+  }
+
+  #lref{display:flex;gap:8px;margin:2px 0 10px}
+  .lref-chip{
+    padding:7px 12px;border-radius:999px;cursor:pointer;
+    border:1.5px solid var(--line);background:var(--chip-bg);color:var(--ink);
+    font-family:inherit;font-size:12px;font-weight:700;
+  }
+  .lref-chip.on{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+  .lref-chip.unset{opacity:.4}
+
+  /* Form contributo locker */
+  #addBrands{display:flex;gap:8px;flex-wrap:wrap;margin:2px 0 16px}
+  .ab-chip{
+    display:flex;align-items:center;gap:7px;padding:9px 13px;border-radius:999px;cursor:pointer;
+    border:1.5px solid var(--line);background:var(--chip-bg);color:var(--ink);font-size:13px;font-weight:700;
+  }
+  .ab-chip .dot{width:10px;height:10px;border-radius:50%}
+  .ab-chip.sel{border-color:var(--ink);background:var(--ink);color:var(--bg)}
+  .add-field{margin-bottom:12px}
+  .add-field label{display:block;font-size:12px;font-weight:700;color:var(--ink-2);margin-bottom:6px}
+  .add-field input{
+    width:100%;height:44px;border-radius:12px;border:1.5px solid var(--line);
+    background:var(--bg);color:var(--ink);padding:0 13px;
+    font-family:inherit;font-size:16px;font-weight:500;outline:none;
+    -webkit-user-select:text;user-select:text;
+  }
+  #addCoords{font-size:11px;color:var(--ink-2);font-weight:600;margin-bottom:14px}
+  #addSubmit{
+    width:100%;padding:15px;border-radius:14px;border:none;cursor:pointer;
+    background:var(--accent);color:var(--accent-ink);font-size:15px;font-weight:800;
+  }
+  #addSubmit:active{transform:scale(.98)}
+  #addSubmit:disabled{opacity:.5}
+  #addNoShare{
+    margin-top:12px;padding:12px 14px;border-radius:12px;background:var(--bg);
+    border:1.5px dashed var(--line);font-size:12px;color:var(--ink-2);font-weight:500;line-height:1.5;display:none;
+  }
+  #addNoShare.show{display:block}
+  #addNoShare b{color:var(--ink)}
 
   @media (prefers-reduced-motion: reduce){
     *,*::before,*::after{animation-duration:.001s !important;transition-duration:.001s !important}
@@ -387,6 +484,15 @@
     <svg viewBox="0 0 24 24"><path d="M4 6h16M4 12h16M4 18h10"/></svg>
     Vicini
   </button>
+  <button id="btnAdd" title="Aggiungi un locker" aria-label="Aggiungi un locker">
+    <svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>
+  </button>
+  <div id="crosshair"><div class="head"><span>📦</span></div><div class="stem"></div></div>
+  <div id="placeBar">
+    <span>Trascina la mappa sul locker</span>
+    <button class="cancel" id="placeCancel">Annulla</button>
+    <button class="go" id="placeConfirm">Qui ✓</button>
+  </div>
   <div id="loader"><div class="spinner"></div><p id="loaderText">Carico i locker…</p></div>
   <div id="toast" role="status"></div>
 </div>
@@ -422,6 +528,11 @@
 <div id="listPanel" class="panel" role="dialog" aria-modal="true">
   <div class="grab"></div>
   <div id="listTitle">Locker più vicini</div>
+  <div id="lref">
+    <button class="lref-chip" data-m="auto">📍 Posizione</button>
+    <button class="lref-chip" data-m="home">🏠 Casa</button>
+    <button class="lref-chip" data-m="work">💼 Lavoro</button>
+  </div>
   <div id="listRef"></div>
   <div id="listRows"></div>
 </div>
@@ -440,12 +551,42 @@
     <div class="set-info-row"><span>Preferiti salvati</span><b id="set-favs"></b></div>
   </div>
   <div class="set-field">
-    <label for="set-customurl">Fonte personale (URL SheetDB / API JSON)</label>
+    <label for="set-sburl">🌐 Registro pubblico (Supabase) — Project URL</label>
+    <input class="fld-input" id="set-sburl" type="url" placeholder="https://xxxxx.supabase.co" autocomplete="off" style="width:100%">
+  </div>
+  <div class="set-field">
+    <label for="set-sbkey">Chiave pubblica (anon key)</label>
+    <div class="set-field-row">
+      <input class="fld-input" id="set-sbkey" type="text" placeholder="eyJ…" autocomplete="off">
+      <button class="fld-btn" id="set-sbsave">Salva</button>
+    </div>
+    <div class="set-hint">I locker proposti con "+" restano in attesa di approvazione (dalla dashboard Supabase) prima di comparire a tutti gli utenti. Guida completa: vedi "guida-supabase.md"</div>
+  </div>
+  <div class="set-field">
+    <label for="set-customurl">Fonte personale extra (URL JSON di sola lettura)</label>
     <div class="set-field-row">
       <input id="set-customurl" type="url" placeholder="https://sheetdb.io/api/v1/…" autocomplete="off">
       <button id="set-savecustom">Salva</button>
     </div>
-    <div class="set-hint">Foglio con colonne: brand, nome, via, citta, lat, lon, orari — per aggiungere i locker di qualsiasi azienda</div>
+    <div class="set-hint">Foglio o API di sola lettura con colonne: brand, nome, via, citta, lat, lon, orari — per importare i locker di un'azienda specifica</div>
+  </div>
+  <div class="set-field">
+    <label for="set-home">🏠 Casa</label>
+    <div class="set-field-row">
+      <input class="fld-input" id="set-home" type="text" placeholder="Indirizzo di casa…" autocomplete="off">
+      <button class="fld-btn ghost" id="set-home-gps" title="Usa la posizione attuale">📍</button>
+      <button class="fld-btn" id="set-home-save">Salva</button>
+    </div>
+    <div class="set-hint" id="set-home-cur">Non impostata</div>
+  </div>
+  <div class="set-field">
+    <label for="set-work">💼 Lavoro</label>
+    <div class="set-field-row">
+      <input class="fld-input" id="set-work" type="text" placeholder="Indirizzo del lavoro…" autocomplete="off">
+      <button class="fld-btn ghost" id="set-work-gps" title="Usa la posizione attuale">📍</button>
+      <button class="fld-btn" id="set-work-save">Salva</button>
+    </div>
+    <div class="set-hint" id="set-work-cur">Non impostato</div>
   </div>
   <button class="set-btn" id="set-clearcache">
     <svg viewBox="0 0 24 24"><path d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6"/><path d="M10 11v6M14 11v6"/></svg>
@@ -466,6 +607,24 @@
   <div class="set-note">Dati: OpenStreetMap · La cache rende l'avvio istantaneo e permette l'uso offline</div>
 </div>
 
+<!-- Aggiungi locker -->
+<div id="addPanel" class="panel" role="dialog" aria-modal="true">
+  <div class="grab"></div>
+  <div id="setTitle">📦 Nuovo locker</div>
+  <div id="addBrands"></div>
+  <div class="add-field">
+    <label for="add-name">Nome del punto (es. Supermercato, edificio…)</label>
+    <input id="add-name" type="text" placeholder="Es. Conad Via Roma">
+  </div>
+  <div class="add-field">
+    <label for="add-addr">Indirizzo</label>
+    <input id="add-addr" type="text" placeholder="Via, numero civico, città">
+  </div>
+  <div id="addCoords"></div>
+  <button id="addSubmit">Pubblica locker</button>
+  <div id="addNoShare">📍 Verrà salvato <b>solo sul tuo telefono</b>: nessun registro pubblico Supabase configurato. Vai in ⚙️ Impostazioni per collegarlo (guida-supabase.md).</div>
+</div>
+
 <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet.markercluster/1.5.3/leaflet.markercluster.min.js"></script>
 <script>
@@ -475,7 +634,7 @@
    Geocoding: Nominatim (OpenStreetMap)
    ============================================================ */
 
-const APP_VERSION = '3.2';
+const APP_VERSION = '3.5';
 const ROME_BBOX = '41.40,11.73,42.30,13.30';
 
 const OVERPASS_ENDPOINTS = [
@@ -572,6 +731,48 @@ function refPoint(){
   if (searchPos) return { ...searchPos, label:'da ' + searchPos.label };
   const c = map.getCenter();
   return { lat:c.lat, lon:c.lng, label:'dal centro della mappa' };
+}
+
+// ----- Luoghi salvati: Casa e Lavoro -----
+const PLACES = {
+  home: { key:'dexlocker-home-v1', nome:'casa',   emoji:'🏠' },
+  work: { key:'dexlocker-work-v1', nome:'lavoro', emoji:'💼' }
+};
+const places = { home:null, work:null };
+const placeMarkers = { home:null, work:null };
+
+function loadPlaces(){
+  for (const k in PLACES){
+    try{ places[k] = JSON.parse(lsGet(PLACES[k].key)); }catch(e){ places[k] = null; }
+  }
+}
+function savePlace(k, val){
+  places[k] = val;
+  lsSet(PLACES[k].key, val ? JSON.stringify(val) : '');
+  renderPlaceMarkers();
+}
+function renderPlaceMarkers(){
+  for (const k in PLACES){
+    if (placeMarkers[k]){ map.removeLayer(placeMarkers[k]); placeMarkers[k] = null; }
+    if (places[k]){
+      placeMarkers[k] = L.marker([places[k].lat, places[k].lon], {
+        icon: L.divIcon({ className:'', html:`<div class="place-pin">${PLACES[k].emoji}</div>`, iconSize:[30,30], iconAnchor:[15,15] }),
+        zIndexOffset: 950
+      }).addTo(map);
+    }
+  }
+}
+async function geocodeFirst(q){
+  const url = `https://nominatim.openstreetmap.org/search?format=json&limit=1&countrycodes=it&q=${encodeURIComponent(q)}`;
+  const r = await fetch(url, { headers:{ 'Accept':'application/json' } });
+  const res = await r.json();
+  if (!res.length) return null;
+  return { lat:+res[0].lat, lon:+res[0].lon, label: res[0].display_name.split(',').slice(0,3).join(', ').trim() };
+}
+function refPointFor(mode){
+  if (mode === 'home' && places.home) return { ...places.home, label:'da casa' };
+  if (mode === 'work' && places.work) return { ...places.work, label:'dal lavoro' };
+  return refPoint();
 }
 
 // ----- Fetch da Overpass -----
@@ -766,6 +967,172 @@ function mergeCustom(base, custom){
   return base.concat(extra);
 }
 
+// ----- Contributi utente: aggiungi locker in stile Waze -----
+// Se è configurata una fonte condivisa (SheetDB), il contributo viene inviato lì
+// e diventa visibile a chiunque usi l'app puntata sullo stesso foglio.
+// Senza fonte condivisa, il contributo resta salvato solo su questo telefono.
+const LOCAL_ADDED_KEY = 'dexlocker-mine-v1';
+let addSelectedBrand = 'inpost';
+
+function loadLocalAdded(){
+  try{ return JSON.parse(lsGet(LOCAL_ADDED_KEY)) || []; }catch(e){ return []; }
+}
+function saveLocalAdded(list){ lsSet(LOCAL_ADDED_KEY, JSON.stringify(list)); }
+
+function fetchLocalAdded(bbox){
+  const [s, w, n, e] = bbox.split(',').map(Number);
+  return loadLocalAdded()
+    .filter(p => p.lat >= s && p.lat <= n && p.lon >= w && p.lon <= e)
+    .map(p => ({ ...p, mine:true }));
+}
+
+// ----- Registro pubblico Supabase (lettura approvati + invio proposte) -----
+const SB_URL_KEY = 'dexlocker-sb-url';
+const SB_KEY_KEY = 'dexlocker-sb-key';
+
+function sbConfig(){
+  const url = (lsGet(SB_URL_KEY) || '').trim().replace(/\/$/, '');
+  const key = (lsGet(SB_KEY_KEY) || '').trim();
+  return (url && key) ? { url, key } : null;
+}
+
+async function fetchSupabaseApproved(bbox){
+  const cfg = sbConfig();
+  if (!cfg) return [];
+  const [s, w, n, e] = bbox.split(',').map(Number);
+  const ctrl = new AbortController();
+  const timer = setTimeout(() => ctrl.abort(), 15000);
+  try{
+    const qs = `status=eq.approved&lat=gte.${s}&lat=lte.${n}&lon=gte.${w}&lon=lte.${e}&select=*`;
+    const r = await fetch(`${cfg.url}/rest/v1/lockers?${qs}`, {
+      headers:{ 'apikey': cfg.key, 'Authorization': 'Bearer ' + cfg.key },
+      signal: ctrl.signal
+    });
+    if (!r.ok) throw new Error('HTTP ' + r.status);
+    const rows = await r.json();
+    return rows.map(row => ({
+      id: 'sb/' + row.id,
+      lat: row.lat, lon: row.lon,
+      brand: detectBrand({ brand: row.brand || '' }),
+      community: true,
+      tags: {
+        name: row.nome || '', 'addr:street': row.via || '',
+        'addr:city': row.citta || '', opening_hours: row.orari || ''
+      }
+    }));
+  }finally{ clearTimeout(timer); }
+}
+
+async function submitToSupabase(row){
+  const cfg = sbConfig();
+  if (!cfg) return false;
+  const ctrl = new AbortController();
+  const timer = setTimeout(() => ctrl.abort(), 15000);
+  try{
+    const r = await fetch(`${cfg.url}/rest/v1/lockers`, {
+      method:'POST',
+      headers:{
+        'apikey': cfg.key, 'Authorization': 'Bearer ' + cfg.key,
+        'Content-Type':'application/json', 'Prefer':'return=minimal'
+      },
+      body: JSON.stringify({ ...row, status:'pending' }),
+      signal: ctrl.signal
+    });
+    if (!r.ok) throw new Error('HTTP ' + r.status);
+    return true;
+  }finally{ clearTimeout(timer); }
+}
+
+function renderAddBrands(){
+  const box = $('addBrands');
+  box.innerHTML = '';
+  for (const [key, b] of Object.entries(BRANDS)){
+    if (key === 'altro') continue;
+    const c = document.createElement('button');
+    c.className = 'ab-chip' + (addSelectedBrand === key ? ' sel' : '');
+    c.innerHTML = `<span class="dot" style="background:${b.color}"></span>${b.name}`;
+    c.onclick = () => { addSelectedBrand = key; renderAddBrands(); };
+    box.appendChild(c);
+  }
+}
+
+function openAddForm(){
+  $('add-name').value = '';
+  $('add-addr').value = '';
+  renderAddBrands();
+  const c = map.getCenter();
+  $('addCoords').textContent = `📍 ${c.lat.toFixed(5)}, ${c.lng.toFixed(5)}`;
+  $('addNoShare').classList.toggle('show', !sbConfig());
+  closePanels();
+  $('addPanel').classList.add('show');
+  $('backdrop').classList.add('show');
+}
+
+// Modalità posizionamento (mirino stile Waze)
+let placing = false;
+$('btnAdd').onclick = () => {
+  placing = true;
+  $('crosshair').classList.add('show');
+  $('placeBar').classList.add('show');
+  $('btnAdd').style.display = 'none';
+  $('btnList').style.display = 'none';
+};
+function exitPlacing(){
+  placing = false;
+  $('crosshair').classList.remove('show');
+  $('placeBar').classList.remove('show');
+  $('btnAdd').style.display = 'flex';
+  $('btnList').style.display = 'flex';
+}
+$('placeCancel').onclick = exitPlacing;
+$('placeConfirm').onclick = () => { exitPlacing(); openAddForm(); };
+
+$('addSubmit').onclick = async () => {
+  const c = map.getCenter();
+  const name = $('add-name').value.trim();
+  const addr = $('add-addr').value.trim();
+  if (!name){ toast('Aggiungi almeno un nome per il punto'); return; }
+
+  const btn = $('addSubmit');
+  btn.disabled = true; btn.textContent = 'Pubblico…';
+
+  const point = {
+    id: 'mine/' + Date.now(),
+    lat: c.lat, lon: c.lng,
+    brand: addSelectedBrand,
+    tags: { name, 'addr:street': addr, 'addr:city':'' }
+  };
+
+  if (sbConfig()){
+    try{
+      await submitToSupabase({
+        brand: BRANDS[addSelectedBrand].name,
+        nome: name, via: addr, citta: '',
+        lat: c.lat, lon: c.lng, orari: ''
+      });
+      // Resta visibile solo a chi l'ha proposto finché non viene approvato da te in Supabase
+      const mine = loadLocalAdded(); mine.push({ ...point, custom:true, pending:true }); saveLocalAdded(mine);
+      toast('Proposta inviata: sarà visibile a tutti dopo l\'approvazione ✅', 3800);
+      closePanels();
+      lockers = mergeCustom(lockers, fetchLocalAdded(ROME_BBOX));
+      renderChips(); renderMarkers();
+    }catch(e){
+      toast('Invio al registro pubblico fallito: salvo solo sul tuo telefono', 3500);
+      const mine = loadLocalAdded(); mine.push({ ...point, custom:true }); saveLocalAdded(mine);
+      closePanels();
+      lockers = mergeCustom(lockers, fetchLocalAdded(ROME_BBOX));
+      renderChips(); renderMarkers();
+    }
+  } else {
+    const mine = loadLocalAdded(); mine.push({ ...point, custom:true }); saveLocalAdded(mine);
+    toast('Locker salvato sul tuo telefono 📍', 3000);
+    closePanels();
+    lockers = mergeCustom(lockers, fetchLocalAdded(ROME_BBOX));
+    renderChips(); renderMarkers();
+  }
+  btn.disabled = false; btn.textContent = 'Pubblica locker';
+};
+
 // ----- Cache locale: avvio istantaneo e offline -----
 const CACHE_KEY = 'dexlocker-v1';
 const cache = {
@@ -779,22 +1146,24 @@ async function load(bbox, label){
   $('btnReload').classList.add('spin');
   try{
     const isProvince = bbox === ROME_BBOX;
-    // Le tre fonti viaggiano in parallelo: se una fallisce, bastano le altre
-    const [osmRes, ipRes, cuRes] = await Promise.allSettled([
+    // Le fonti viaggiano in parallelo: se una fallisce, bastano le altre
+    const [osmRes, ipRes, cuRes, sbRes] = await Promise.allSettled([
       fetchLockers(bbox, isProvince ? 20 : 0),
       fetchInPost(bbox),
-      fetchCustom(bbox)
+      fetchCustom(bbox),
+      fetchSupabaseApproved(bbox)
     ]);
     const osm      = osmRes.status === 'fulfilled' ? parseElements(osmRes.value) : [];
     const official = ipRes.status === 'fulfilled' ? ipRes.value : [];
     const custom   = cuRes.status === 'fulfilled' ? cuRes.value : [];
+    const community = sbRes.status === 'fulfilled' ? sbRes.value : [];
     if (cuRes.status !== 'fulfilled' && (lsGet(CUSTOM_URL_KEY) || '').trim()){
       toast('Fonte personale non raggiungibile: controlla l\'URL in ⚙️', 3500);
     }
-    if (osmRes.status !== 'fulfilled' && !official.length && !custom.length){
+    if (osmRes.status !== 'fulfilled' && !official.length && !custom.length && !community.length){
       throw (osmRes.reason || new Error('Nessuna fonte dati raggiungibile'));
     }
-    const fresh = mergeCustom(mergeSources(osm, official), custom);
+    const fresh = mergeCustom(mergeCustom(mergeCustom(mergeSources(osm, official), custom), community), fetchLocalAdded(bbox));
     // Non sostituire dati buoni con un risultato peggiore (una fonte momentaneamente giù)
     if (loadedOnce && fresh.length < lockers.length * 0.5){
       toast('Una fonte dati è momentaneamente giù: tengo i dati già caricati', 3500);
@@ -932,11 +1301,17 @@ function openSheet(lk){
   const addr = formatAddress(t);
   $('sh-addr').textContent = addr || `Coordinate: ${lk.lat.toFixed(5)}, ${lk.lon.toFixed(5)}`;
 
-  // Distanza dal punto di riferimento (GPS o indirizzo cercato)
+  // Distanze: dalla posizione/ricerca, da casa e dal lavoro
   const distEl = $('sh-dist');
+  const dparts = [];
   if (userPos || searchPos){
     const ref = refPoint();
-    distEl.textContent = `📍 ${fmtDist(haversine(ref, lk))} ${ref.label}`;
+    dparts.push(`📍 ${fmtDist(haversine(ref, lk))} ${ref.label}`);
+  }
+  if (places.home) dparts.push(`🏠 ${fmtDist(haversine(places.home, lk))} da casa`);
+  if (places.work) dparts.push(`💼 ${fmtDist(haversine(places.work, lk))} dal lavoro`);
+  if (dparts.length){
+    distEl.innerHTML = dparts.join('<br>');
     distEl.classList.add('show');
   } else {
     distEl.classList.remove('show');
@@ -952,6 +1327,9 @@ function openSheet(lk){
   if (t.note) rows.push({ icon:'<path d="M12 8v5M12 16.5v.5"/><circle cx="12" cy="12" r="9"/>', text: t.note });
   if (lk.official) rows.push({ icon:'<path d="M20 6L9 17l-5-5"/>', text:'Dato ufficiale InPost' });
   if (lk.custom) rows.push({ icon:'<path d="M4 4h16v16H4z"/><path d="M4 9h16M9 9v11"/>', text:'Dalla tua fonte personale' });
+  if (lk.community) rows.push({ icon:'<path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/>', text:'Aggiunto da un utente · approvato ✓' });
+  if (lk.pending) rows.push({ icon:'<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>', text:'In attesa di approvazione (solo tu la vedi)' });
+  else if (lk.mine) rows.push({ icon:'<path d="M12 5v14M5 12h14"/>', text:'Aggiunto da te (solo su questo telefono)' });
   $('sh-rows').innerHTML = rows.map(r =>
     `<div class="sh-row"><svg viewBox="0 0 24 24">${r.icon}</svg><span>${r.text}</span></div>`
   ).join('');
@@ -980,10 +1358,11 @@ function closePanels(){
   $('sheet').classList.remove('show');
   $('listPanel').classList.remove('show');
   $('settingsPanel').classList.remove('show');
+  $('addPanel').classList.remove('show');
   $('backdrop').classList.remove('show');
 }
 $('backdrop').onclick = closePanels;
-for (const pid of ['sheet','listPanel','settingsPanel']){
+for (const pid of ['sheet','listPanel','settingsPanel','addPanel']){
   let touchY = null;
   const el = $(pid);
   el.addEventListener('touchstart', e => touchY = e.touches[0].clientY, {passive:true});
@@ -995,14 +1374,25 @@ for (const pid of ['sheet','listPanel','settingsPanel']){
 }
 
 // ----- Lista locker più vicini -----
+let listMode = 'auto';   // 'auto' (posizione/ricerca) | 'home' | 'work'
+
+function renderLrefChips(){
+  $('lref').querySelectorAll('.lref-chip').forEach(ch => {
+    const m = ch.dataset.m;
+    ch.classList.toggle('on', listMode === m);
+    ch.classList.toggle('unset', (m === 'home' && !places.home) || (m === 'work' && !places.work));
+  });
+}
+
 function openList(){
   if (!lockers.length){ toast('Nessun dato ancora: attendi il caricamento'); return; }
-  const ref = refPoint();
+  const ref = refPointFor(listMode);
   const items = visibleLockers()
     .map(l => ({ l, d: haversine(ref, l) }))
     .sort((a,b) => a.d - b.d)
     .slice(0, 30);
 
+  renderLrefChips();
   $('listRef').textContent = `Distanze ${ref.label}` + (favOnly ? ' · solo preferiti' : '');
   $('listRows').innerHTML = items.length ? items.map(({l, d}) => {
     const b = BRANDS[l.brand];
@@ -1034,6 +1424,15 @@ function openList(){
   $('listRows').scrollTop = 0;
 }
 $('btnList').onclick = openList;
+$('lref').querySelectorAll('.lref-chip').forEach(ch => {
+  ch.onclick = () => {
+    const m = ch.dataset.m;
+    if (m === 'home' && !places.home){ toast('Imposta prima Casa in ⚙️ Impostazioni'); return; }
+    if (m === 'work' && !places.work){ toast('Imposta prima Lavoro in ⚙️ Impostazioni'); return; }
+    listMode = m;
+    openList();
+  };
+});
 
 // ----- Ricerca indirizzo / CAP (Nominatim) -----
 const sInput = $('searchInput'), sResults = $('searchResults');
@@ -1150,6 +1549,13 @@ function openSettings(){
   $('set-favs').textContent = favs.size;
   $('set-custom').textContent = lockers.filter(l => l.custom).length.toLocaleString('it-IT');
   $('set-customurl').value = lsGet(CUSTOM_URL_KEY) || '';
+  $('set-sburl').value = lsGet(SB_URL_KEY) || '';
+  $('set-sbkey').value = lsGet(SB_KEY_KEY) || '';
+  for (const k in PLACES){
+    $(`set-${k}-cur`).textContent = places[k]
+      ? `${PLACES[k].emoji} ${places[k].label}`
+      : (k === 'home' ? 'Non impostata' : 'Non impostato');
+  }
   try{
     const ip = JSON.parse(lsGet(IP_CACHE_KEY));
     $('set-ipdate').textContent = ip?.ts
@@ -1161,6 +1567,49 @@ function openSettings(){
   $('backdrop').classList.add('show');
 }
 $('btnSettings').onclick = openSettings;
+
+$('set-sbsave').onclick = () => {
+  const url = $('set-sburl').value.trim().replace(/\/$/, '');
+  const key = $('set-sbkey').value.trim();
+  if (url && !/^https:\/\/.+\.supabase\.co$/.test(url)){
+    toast('URL non valido: deve essere tipo https://xxxxx.supabase.co'); return;
+  }
+  lsSet(SB_URL_KEY, url);
+  lsSet(SB_KEY_KEY, key);
+  try{ localStorage.removeItem(CACHE_KEY); }catch(e){}
+  closePanels();
+  toast(url && key ? 'Registro pubblico Supabase collegato ✓' : 'Registro pubblico Supabase scollegato');
+  load(ROME_BBOX, 'Roma e provincia');
+};
+
+for (const k in PLACES){
+  $(`set-${k}-save`).onclick = async () => {
+    const q = $(`set-${k}`).value.trim();
+    if (!q){ savePlace(k, null); openSettings(); toast(`${PLACES[k].emoji} ${PLACES[k].nome} rimosso/a`); return; }
+    $(`set-${k}-cur`).textContent = 'Cerco l\'indirizzo…';
+    try{
+      const p = await geocodeFirst(q);
+      if (!p){ $(`set-${k}-cur`).textContent = 'Indirizzo non trovato: aggiungi la città'; return; }
+      savePlace(k, p);
+      $(`set-${k}`).value = '';
+      openSettings();
+      toast(`${PLACES[k].emoji} ${PLACES[k].nome} salvato/a: ${p.label}`, 3200);
+    }catch(e){ $(`set-${k}-cur`).textContent = 'Errore di rete: riprova'; }
+  };
+  $(`set-${k}-gps`).onclick = () => {
+    if (!navigator.geolocation){ toast('Geolocalizzazione non disponibile'); return; }
+    $(`set-${k}-cur`).textContent = 'Rilevo la posizione…';
+    navigator.geolocation.getCurrentPosition(
+      pos => {
+        savePlace(k, { lat: pos.coords.latitude, lon: pos.coords.longitude, label: 'Posizione attuale salvata' });
+        openSettings();
+        toast(`${PLACES[k].emoji} ${PLACES[k].nome}: posizione attuale salvata`);
+      },
+      () => { $(`set-${k}-cur`).textContent = 'Posizione non disponibile: controlla i permessi'; },
+      { enableHighAccuracy:true, timeout:10000 }
+    );
+  };
+}
 
 $('set-savecustom').onclick = () => {
   const url = $('set-customurl').value.trim();
@@ -1214,6 +1663,8 @@ $('set-clearfavs').onclick = () => {
 };
 
 // ----- Avvio -----
+loadPlaces();
+renderPlaceMarkers();
 const saved = cache.get();
 if (saved && Array.isArray(saved.lockers) && saved.lockers.length){
   lockers = saved.lockers;
