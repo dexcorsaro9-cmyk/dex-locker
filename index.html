@@ -1203,7 +1203,7 @@
    Geocoding: Nominatim (OpenStreetMap)
    ============================================================ */
 
-const APP_VERSION = '8.3';
+const APP_VERSION = '8.4';
 const HOME_BBOX = '41.40,11.73,42.30,13.30';   // vista iniziale: Roma e provincia
 let currentBBox = HOME_BBOX;                       // area effettivamente caricata in questo momento
 
@@ -2210,6 +2210,9 @@ $('addSubmit').onclick = async () => {
 
 // ----- Cache locale: avvio istantaneo e offline -----
 const CACHE_KEY = 'dexlocker-v1';
+// Entro questa soglia i dati salvati si considerano ancora buoni: l'app parte
+// senza fare NESSUNA richiesta di rete, usando solo quello che ha già.
+const CACHE_FRESH_MS = 20 * 60 * 1000;   // 20 minuti
 const cache = {
   get(){ try{ return JSON.parse(lsGet(CACHE_KEY)); }catch(e){ return null; } },
   set(v){ lsSet(CACHE_KEY, JSON.stringify(v)); }
@@ -2903,17 +2906,29 @@ function hideSplashRespectingMinTime(){
 loadPlaces();
 renderPlaceMarkers();
 const saved = cache.get();
+let bootLoad;
+
 if (saved && Array.isArray(saved.lockers) && saved.lockers.length){
   lockers = saved.lockers;
   loadedOnce = true;
+  currentBBox = saved.bbox || HOME_BBOX;   // riparte dall'ultima zona visualizzata
   renderChips();
   renderMarkers();
   $('subtitle').textContent = `${lockers.length.toLocaleString('it-IT')} locker · ${saved.label || 'dati salvati'}`;
+
+  const isFresh = saved.ts && (Date.now() - saved.ts) < CACHE_FRESH_MS;
+  if (isFresh){
+    // Dati recenti: avvio istantaneo, zero richieste di rete
+    bootLoad = Promise.resolve();
+  } else {
+    bootLoad = load(currentBBox, areaLabel(currentBBox), { isRefresh:true });
+  }
+} else {
+  bootLoad = load(HOME_BBOX, 'Roma e provincia');
 }
 
 // Caricamento in background durante lo splash: la promessa vince la corsa se
 // finisce prima del tetto massimo, altrimenti vince la rete di sicurezza.
-const bootLoad = load(HOME_BBOX, 'Roma e provincia');
 const splashSafety = new Promise(resolve => setTimeout(resolve, SPLASH_MAX_MS));
 Promise.race([bootLoad, splashSafety]).then(hideSplashRespectingMinTime);
 </script>
