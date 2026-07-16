@@ -78,9 +78,10 @@
     width:40px;height:40px;border-radius:12px;border:1.5px solid var(--line);
     background:var(--surface);color:var(--ink);cursor:pointer;
     display:flex;align-items:center;justify-content:center;
-    transition:transform .12s ease;flex-shrink:0;
+    box-shadow:0 1px 0 rgba(255,255,255,.5) inset, 0 1px 3px rgba(0,0,0,.06);
+    transition:transform .15s cubic-bezier(.34,1.56,.64,1);flex-shrink:0;
   }
-  .icon-btn:active{transform:scale(.92)}
+  .icon-btn:active{transform:scale(.9)}
   .icon-btn svg{width:19px;height:19px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
   .icon-btn.spin svg{animation:rot 1s linear infinite}
   @keyframes rot{to{transform:rotate(360deg)}}
@@ -136,15 +137,20 @@
     padding:8px 13px;border-radius:999px;cursor:pointer;
     border:1.5px solid var(--line);background:var(--chip-bg);color:var(--ink);
     font-size:13px;font-weight:600;
-    transition:opacity .15s ease, transform .12s ease;
+    box-shadow:0 1px 0 rgba(255,255,255,.5) inset, 0 1px 3px rgba(0,0,0,.05);
+    transition:opacity .15s ease, transform .15s cubic-bezier(.34,1.56,.64,1);
   }
-  .chip:active{transform:scale(.95)}
-  .chip .dot{width:10px;height:10px;border-radius:50%;flex-shrink:0}
+  .chip:active{transform:scale(.94)}
+  .chip .dot{width:10px;height:10px;border-radius:50%;flex-shrink:0;box-shadow:inset 0 -1px 1px rgba(0,0,0,.25)}
   .chip .n{font-size:11px;font-weight:700;color:var(--ink-2)}
   .chip.off{opacity:.38}
   .chip.all{border-color:var(--ink);font-weight:700}
   .chip.fav{font-weight:700}
-  .chip.fav.on{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+  .chip.fav.on{
+    background:linear-gradient(165deg, color-mix(in srgb, var(--accent) 100%, white 20%), var(--accent));
+    border-color:transparent;color:var(--accent-ink);
+    box-shadow:0 2px 6px color-mix(in srgb, var(--accent) 50%, transparent), inset 0 1px 1px rgba(255,255,255,.5);
+  }
   .chip.fav.on .n{color:var(--accent-ink);opacity:.7}
 
   #quickFilters{
@@ -157,10 +163,15 @@
     padding:7px 12px;border-radius:999px;cursor:pointer;
     border:1.5px solid var(--line);background:var(--chip-bg);color:var(--ink-2);
     font-size:12px;font-weight:700;
+    box-shadow:0 1px 0 rgba(255,255,255,.5) inset;
+    transition:transform .15s cubic-bezier(.34,1.56,.64,1);
   }
-  .qf-chip:active{transform:scale(.95)}
-  .qf-chip.on{background:var(--ink);border-color:var(--ink);color:var(--bg)}
-  .qf-chip.route{border-color:var(--accent);color:var(--accent-ink);background:color-mix(in srgb, var(--accent) 16%, var(--surface));font-weight:800}
+  .qf-chip:active{transform:scale(.94)}
+  .qf-chip.on{
+    background:linear-gradient(165deg, color-mix(in srgb, var(--ink) 100%, white 18%), var(--ink));
+    border-color:transparent;color:var(--bg);
+    box-shadow:0 2px 6px rgba(0,0,0,.25), inset 0 1px 1px rgba(255,255,255,.12);
+  }
 
   /* ---------- Mappa ---------- */
   #mapwrap{position:relative;flex:1;min-height:0}
@@ -171,13 +182,25 @@
     width:28px;height:28px;border-radius:50% 50% 50% 4px;
     display:flex;align-items:center;justify-content:center;
     font-size:12px;font-weight:800;
-    border:2.5px solid #fff;box-shadow:0 2px 8px rgba(0,0,0,.35);
+    border:2.5px solid #fff;
     transform:rotate(-45deg);
     position:relative;
+    background:
+      linear-gradient(145deg, color-mix(in srgb, var(--pin-color) 100%, white 30%) 0%, var(--pin-color) 55%, color-mix(in srgb, var(--pin-color) 100%, black 22%) 100%);
+    box-shadow:
+      0 3px 6px rgba(0,0,0,.28),
+      0 6px 14px rgba(0,0,0,.22),
+      inset 0 -3px 4px rgba(0,0,0,.22),
+      inset 0 2px 2px rgba(255,255,255,.5);
   }
-  .pin span{transform:rotate(45deg)}
-  .pin.searched{background:var(--ink);color:var(--accent);border-color:var(--accent)}
-  .pin.starred{box-shadow:0 0 0 3px var(--accent), 0 2px 8px rgba(0,0,0,.4)}
+  .pin::before{
+    content:'';position:absolute;top:3px;left:5px;width:55%;height:42%;
+    background:radial-gradient(ellipse at 35% 30%, rgba(255,255,255,.65), rgba(255,255,255,0) 72%);
+    border-radius:50%;transform:rotate(45deg);pointer-events:none;
+  }
+  .pin span{transform:rotate(45deg);position:relative;z-index:1;text-shadow:0 1px 1px rgba(0,0,0,.25)}
+  .pin.searched{background:linear-gradient(145deg, color-mix(in srgb, var(--ink) 100%, white 25%), var(--ink));color:var(--accent);border-color:var(--accent)}
+  .pin.starred{box-shadow:0 0 0 3px var(--accent), 0 3px 6px rgba(0,0,0,.28), 0 6px 14px rgba(0,0,0,.22), inset 0 -3px 4px rgba(0,0,0,.22), inset 0 2px 2px rgba(255,255,255,.5)}
   .pin-star{
     position:absolute;top:-9px;right:-9px;transform:rotate(45deg);
     width:15px;height:15px;border-radius:50%;background:var(--accent);color:var(--accent-ink);
@@ -185,10 +208,17 @@
     border:2px solid #fff;
   }
   .cluster{
-    background:var(--ink);color:var(--bg);
+    background:linear-gradient(145deg, color-mix(in srgb, var(--ink) 100%, white 18%), var(--ink));
+    color:var(--bg);position:relative;
     border-radius:50%;display:flex;align-items:center;justify-content:center;
-    font-weight:800;font-size:12px;
-    border:3px solid var(--accent);box-shadow:0 3px 10px rgba(0,0,0,.35);
+    font-weight:800;font-size:12px;overflow:hidden;
+    border:3px solid var(--accent);
+    box-shadow:0 4px 10px rgba(0,0,0,.32), 0 2px 4px rgba(0,0,0,.2), inset 0 2px 2px rgba(255,255,255,.15);
+  }
+  .cluster::before{
+    content:'';position:absolute;top:12%;left:18%;width:38%;height:30%;
+    background:radial-gradient(ellipse, rgba(255,255,255,.35), rgba(255,255,255,0) 75%);
+    border-radius:50%;pointer-events:none;
   }
   .me-dot{
     width:18px;height:18px;border-radius:50%;background:#2E7CF6;
@@ -209,20 +239,53 @@
   #btnList{
     position:absolute;bottom:calc(20px + env(safe-area-inset-bottom));left:14px;z-index:800;
     height:46px;padding:0 18px;border-radius:999px;border:none;cursor:pointer;
-    background:var(--ink);color:var(--bg);font-size:14px;font-weight:800;
-    box-shadow:var(--shadow);display:flex;align-items:center;gap:9px;
+    background:linear-gradient(165deg, color-mix(in srgb, var(--ink) 100%, white 15%), var(--ink));
+    color:var(--bg);font-size:14px;font-weight:800;
+    box-shadow:0 4px 0 rgba(0,0,0,.35), 0 8px 18px rgba(0,0,0,.25), inset 0 1px 1px rgba(255,255,255,.1);
+    display:flex;align-items:center;gap:9px;
+    transition:transform .15s cubic-bezier(.34,1.56,.64,1), box-shadow .15s ease;
   }
-  #btnList:active{transform:scale(.95)}
+  #btnList:active{transform:scale(.95) translateY(2px);box-shadow:0 2px 0 rgba(0,0,0,.35), 0 4px 10px rgba(0,0,0,.2)}
   #btnList svg{width:17px;height:17px;stroke:var(--accent);fill:none;stroke-width:2.5;stroke-linecap:round}
 
   #btnAdd{
     position:absolute;bottom:calc(20px + env(safe-area-inset-bottom));right:14px;z-index:800;
-    width:52px;height:52px;border-radius:50%;border:none;cursor:pointer;
-    background:var(--accent);color:var(--accent-ink);
-    box-shadow:var(--shadow);display:flex;align-items:center;justify-content:center;
+    width:56px;height:56px;border-radius:50%;border:none;cursor:pointer;
+    background:linear-gradient(165deg, color-mix(in srgb, var(--accent) 100%, white 22%), var(--accent) 55%, color-mix(in srgb, var(--accent) 100%, black 10%));
+    color:var(--accent-ink);
+    box-shadow:0 4px 0 color-mix(in srgb, var(--accent) 100%, black 25%), 0 8px 20px color-mix(in srgb, var(--accent) 55%, transparent), inset 0 2px 2px rgba(255,255,255,.5);
+    display:flex;align-items:center;justify-content:center;
+    transition:transform .15s cubic-bezier(.34,1.56,.64,1), box-shadow .15s ease;
   }
-  #btnAdd:active{transform:scale(.92)}
-  #btnAdd svg{width:24px;height:24px;stroke:currentColor;fill:none;stroke-width:2.6;stroke-linecap:round}
+  #btnAdd:active{transform:scale(.94) translateY(2px);box-shadow:0 2px 0 color-mix(in srgb, var(--accent) 100%, black 25%), 0 4px 10px color-mix(in srgb, var(--accent) 40%, transparent)}
+  #btnAdd svg{width:24px;height:24px;stroke:currentColor;fill:none;stroke-width:2.6;stroke-linecap:round;transition:transform .3s cubic-bezier(.34,1.56,.64,1)}
+  #btnAdd.open svg{transform:rotate(45deg)}
+
+  #fabMenu{
+    position:absolute;right:14px;z-index:799;
+    bottom:calc(20px + env(safe-area-inset-bottom) + 70px);
+    display:flex;flex-direction:column;align-items:flex-end;gap:12px;
+  }
+  .fab-opt{
+    display:flex;align-items:center;gap:10px;
+    background:var(--surface);color:var(--ink);border:none;
+    border-radius:999px;padding:8px 18px 8px 8px;cursor:pointer;
+    font-family:inherit;font-size:14px;font-weight:800;
+    box-shadow:0 10px 24px rgba(0,0,0,.22), 0 2px 6px rgba(0,0,0,.14);
+    opacity:0;transform:translateY(16px) scale(.8);pointer-events:none;
+    transition:opacity .22s ease, transform .35s cubic-bezier(.34,1.56,.64,1);
+  }
+  #fabMenu.open .fab-opt{
+    opacity:1;transform:translateY(0) scale(1);pointer-events:auto;
+    transition-delay:calc(var(--d) * .06s);
+  }
+  .fab-icon{
+    width:36px;height:36px;border-radius:50%;flex-shrink:0;
+    display:flex;align-items:center;justify-content:center;font-size:17px;
+    background:linear-gradient(145deg, color-mix(in srgb, var(--accent) 88%, white 12%), var(--accent));
+    box-shadow:inset 0 -3px 4px rgba(0,0,0,.18), inset 0 1px 1px rgba(255,255,255,.6), 0 2px 6px rgba(0,0,0,.15);
+  }
+  .fab-label{padding-right:2px;white-space:nowrap}
 
   /* Modalità posizionamento (mirino stile Waze) */
   #crosshair{
@@ -280,23 +343,27 @@
 
   /* ---------- Pannelli (sheet dettaglio + lista vicini + impostazioni) ---------- */
   #backdrop{
-    position:fixed;inset:0;z-index:1000;background:rgba(10,12,18,.4);
-    opacity:0;pointer-events:none;transition:opacity .25s ease;
+    position:fixed;inset:0;z-index:1000;background:rgba(8,10,16,.44);
+    -webkit-backdrop-filter:blur(2px);backdrop-filter:blur(2px);
+    opacity:0;pointer-events:none;transition:opacity .3s ease;
   }
   #backdrop.show{opacity:1;pointer-events:auto}
   .panel{
     position:fixed;left:0;right:0;bottom:0;z-index:1001;
-    background:var(--surface);border-radius:22px 22px 0 0;
-    box-shadow:0 -10px 40px rgba(0,0,0,.3);
+    background:color-mix(in srgb, var(--surface) 92%, transparent);
+    -webkit-backdrop-filter:blur(24px) saturate(1.4);
+    backdrop-filter:blur(24px) saturate(1.4);
+    border-radius:30px 30px 0 0;
+    box-shadow:0 -20px 50px rgba(0,0,0,.28), 0 -2px 0 rgba(255,255,255,.04) inset;
     padding:10px 20px calc(22px + env(safe-area-inset-bottom));
-    transform:translateY(105%);transition:transform .3s cubic-bezier(.32,.72,.28,1);
+    transform:translateY(105%) scale(.98);transition:transform .38s cubic-bezier(.32,.9,.35,1.1);
     max-height:min(88dvh, calc(100dvh - env(safe-area-inset-top) - 28px));
     overflow-y:auto;
     -webkit-overflow-scrolling:touch;
     overscroll-behavior:contain;
   }
-  .panel.show{transform:translateY(0)}
-  .grab{width:40px;height:4px;border-radius:2px;background:var(--line);margin:2px auto 14px}
+  .panel.show{transform:translateY(0) scale(1)}
+  .grab{width:38px;height:5px;border-radius:3px;background:var(--line);margin:2px auto 14px}
 
   /* Sheet dettaglio */
   #sheet{border-top:5px solid var(--accent)}
@@ -325,13 +392,19 @@
   .sh-row svg{width:16px;height:16px;stroke:var(--ink-2);fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;flex-shrink:0;margin-top:1px}
   .sh-btns{display:flex;gap:10px}
   .sh-btn{
-    flex:1;padding:14px;border-radius:14px;border:none;cursor:pointer;
+    flex:1;padding:14px;border-radius:16px;border:none;cursor:pointer;
     font-size:14px;font-weight:700;text-align:center;text-decoration:none;
     display:flex;align-items:center;justify-content:center;gap:8px;
+    transition:transform .15s cubic-bezier(.34,1.56,.64,1);
   }
-  .sh-btn:active{transform:scale(.97)}
-  .sh-btn.primary{background:var(--accent);color:var(--accent-ink)}
-  .sh-btn.secondary{background:var(--bg);color:var(--ink);border:1.5px solid var(--line)}
+  .sh-btn:active{transform:scale(.96)}
+  .sh-btn.primary{
+    background:linear-gradient(165deg, color-mix(in srgb, var(--accent) 100%, white 20%), var(--accent) 55%, color-mix(in srgb, var(--accent) 100%, black 8%));
+    color:var(--accent-ink);
+    box-shadow:0 4px 0 color-mix(in srgb, var(--accent) 100%, black 25%), 0 6px 16px color-mix(in srgb, var(--accent) 55%, transparent);
+  }
+  .sh-btn.primary:active{transform:scale(.96) translateY(2px);box-shadow:0 2px 0 color-mix(in srgb, var(--accent) 100%, black 25%)}
+  .sh-btn.secondary{background:var(--bg);color:var(--ink);border:1.5px solid var(--line);box-shadow:0 1px 0 rgba(255,255,255,.5) inset}
   .sh-btn svg{width:17px;height:17px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
 
   /* Stato in tempo reale */
@@ -464,15 +537,22 @@
   }
   .set-info-row b{color:var(--ink);font-weight:800;font-size:13px}
   .set-btn{
-    width:100%;padding:14px;border-radius:14px;cursor:pointer;margin-bottom:10px;
+    width:100%;padding:14px;border-radius:16px;cursor:pointer;margin-bottom:10px;
     border:1.5px solid var(--line);background:var(--surface);color:var(--ink);
     font-size:14px;font-weight:700;
     display:flex;align-items:center;justify-content:center;gap:9px;
+    box-shadow:0 1px 0 rgba(255,255,255,.5) inset, 0 2px 5px rgba(0,0,0,.06);
+    transition:transform .15s cubic-bezier(.34,1.56,.64,1), box-shadow .15s ease;
   }
-  .set-btn:active{transform:scale(.97)}
+  .set-btn:active{transform:scale(.96);box-shadow:0 1px 2px rgba(0,0,0,.08) inset}
   .set-btn svg{width:17px;height:17px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
   .set-btn.danger{color:var(--danger);border-color:color-mix(in srgb, var(--danger) 40%, var(--line))}
-  .set-btn.primary{background:var(--accent);border-color:var(--accent);color:var(--accent-ink);margin-top:8px}
+  .set-btn.primary{
+    background:linear-gradient(165deg, color-mix(in srgb, var(--accent) 100%, white 20%), var(--accent) 55%, color-mix(in srgb, var(--accent) 100%, black 8%));
+    border-color:transparent;color:var(--accent-ink);margin-top:8px;
+    box-shadow:0 4px 0 color-mix(in srgb, var(--accent) 100%, black 25%), 0 6px 16px color-mix(in srgb, var(--accent) 60%, transparent), 0 1px 1px rgba(255,255,255,.5) inset;
+  }
+  .set-btn.primary:active{transform:scale(.96) translateY(2px);box-shadow:0 2px 0 color-mix(in srgb, var(--accent) 100%, black 25%), 0 3px 8px color-mix(in srgb, var(--accent) 40%, transparent)}
   .set-note{font-size:11px;color:var(--ink-2);font-weight:500;text-align:center;margin-top:4px}
   .set-field{margin-bottom:14px}
   .set-field label{display:block;font-size:12px;font-weight:700;color:var(--ink-2);margin-bottom:6px}
@@ -510,30 +590,62 @@
   .lref-chip.unset{opacity:.4}
 
   /* Form contributo locker */
-  #addBrands{display:flex;gap:8px;flex-wrap:wrap;margin:2px 0 16px}
-  .ab-chip{
-    display:flex;align-items:center;gap:7px;padding:9px 13px;border-radius:999px;cursor:pointer;
-    border:1.5px solid var(--line);background:var(--chip-bg);color:var(--ink);font-size:13px;font-weight:700;
+  /* Popup "Nuovo locker" — hero header */
+  .add-hero{display:flex;align-items:center;gap:13px;margin-bottom:18px}
+  .add-hero-badge{
+    width:52px;height:52px;border-radius:16px;flex-shrink:0;
+    display:flex;align-items:center;justify-content:center;font-size:24px;
+    background:linear-gradient(150deg, color-mix(in srgb, var(--accent) 100%, white 22%), var(--accent) 60%, color-mix(in srgb, var(--accent) 100%, black 10%));
+    box-shadow:0 4px 0 color-mix(in srgb, var(--accent) 100%, black 25%), 0 6px 14px color-mix(in srgb, var(--accent) 50%, transparent), inset 0 2px 2px rgba(255,255,255,.5);
   }
-  .ab-chip .dot{width:10px;height:10px;border-radius:50%}
-  .ab-chip.sel{border-color:var(--ink);background:var(--ink);color:var(--bg)}
-  .add-field{margin-bottom:12px}
-  .add-field label{display:block;font-size:12px;font-weight:700;color:var(--ink-2);margin-bottom:6px}
-  .add-field input{
-    width:100%;height:44px;border-radius:12px;border:1.5px solid var(--line);
-    background:var(--bg);color:var(--ink);padding:0 13px;
-    font-family:inherit;font-size:16px;font-weight:500;outline:none;
+  .add-hero-title{font-size:18px;font-weight:800;letter-spacing:-.02em}
+  .add-hero-sub{font-size:12px;color:var(--ink-2);font-weight:500;margin-top:1px}
+  .add-section-label{
+    font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.04em;
+    color:var(--ink-2);margin:16px 0 9px;
+  }
+  .add-section-label:first-of-type{margin-top:0}
+
+  #addBrands{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:4px}
+  .ab-chip{
+    display:flex;align-items:center;gap:7px;padding:9px 14px;border-radius:999px;cursor:pointer;
+    border:1.5px solid var(--line);background:var(--chip-bg);color:var(--ink);font-size:13px;font-weight:700;
+    box-shadow:0 1px 0 rgba(255,255,255,.5) inset;
+    transition:transform .15s cubic-bezier(.34,1.56,.64,1);
+  }
+  .ab-chip:active{transform:scale(.94)}
+  .ab-chip .dot{width:10px;height:10px;border-radius:50%;box-shadow:inset 0 -1px 1px rgba(0,0,0,.25)}
+  .ab-chip.sel{
+    border-color:transparent;background:linear-gradient(165deg, color-mix(in srgb, var(--ink) 100%, white 20%), var(--ink));
+    color:var(--bg);box-shadow:0 3px 8px rgba(0,0,0,.25), inset 0 1px 1px rgba(255,255,255,.12);
+  }
+
+  /* Campi con icona a sinistra, stile "card" con leggero incasso */
+  .add-field-icon{
+    display:flex;align-items:center;gap:12px;
+    background:var(--bg);border-radius:16px;padding:10px 14px;margin-bottom:10px;
+    border:1.5px solid var(--line);
+    box-shadow:inset 0 1px 3px rgba(0,0,0,.05);
+  }
+  .afi-ico{font-size:19px;flex-shrink:0;width:24px;text-align:center}
+  .afi-body{flex:1;min-width:0}
+  .afi-body label{display:block;font-size:11px;font-weight:700;color:var(--ink-2);margin-bottom:2px}
+  .afi-opt{font-weight:500;text-transform:none;color:var(--ink-2);opacity:.7}
+  .afi-body input{
+    width:100%;border:none;background:transparent;color:var(--ink);padding:0;
+    font-family:inherit;font-size:15px;font-weight:600;outline:none;
     -webkit-user-select:text;user-select:text;
   }
-  #addCoords{font-size:11px;color:var(--ink-2);font-weight:600;margin-bottom:14px}
-  #addSubmit{
-    width:100%;padding:15px;border-radius:14px;border:none;cursor:pointer;
-    background:var(--accent);color:var(--accent-ink);font-size:15px;font-weight:800;
+  .afi-body input::placeholder{font-weight:500;color:var(--ink-2);opacity:.6}
+
+  #addCoords{
+    display:inline-flex;align-items:center;gap:6px;
+    font-size:11px;color:var(--ink-2);font-weight:700;
+    background:var(--bg);border:1.5px solid var(--line);border-radius:999px;
+    padding:5px 12px;margin:2px 0 16px;
   }
-  #addSubmit:active{transform:scale(.98)}
-  #addSubmit:disabled{opacity:.5}
   #addNoShare{
-    margin-top:12px;padding:12px 14px;border-radius:12px;background:var(--bg);
+    margin-top:12px;padding:12px 14px;border-radius:14px;background:var(--bg);
     border:1.5px dashed var(--line);font-size:12px;color:var(--ink-2);font-weight:500;line-height:1.5;display:none;
   }
   #addNoShare.show{display:block}
@@ -674,7 +786,6 @@
   <button class="qf-chip" data-f="open">🕐 Aperto ora</button>
   <button class="qf-chip" data-f="h24">🌙 H24</button>
   <button class="qf-chip" data-f="covered">☂️ Al coperto</button>
-  <button class="qf-chip route" id="btnRoute">🧭 Giro spedizioni</button>
 </div>
 
 <div id="mapwrap">
@@ -687,7 +798,17 @@
     <svg viewBox="0 0 24 24"><path d="M4 6h16M4 12h16M4 18h10"/></svg>
     Vicini
   </button>
-  <button id="btnAdd" title="Aggiungi un locker" aria-label="Aggiungi un locker">
+  <div id="fabMenu">
+    <button class="fab-opt" id="fabRoute" style="--d:1">
+      <span class="fab-icon">🧭</span>
+      <span class="fab-label">Giro spedizioni</span>
+    </button>
+    <button class="fab-opt" id="fabAddLocker" style="--d:0">
+      <span class="fab-icon">📦</span>
+      <span class="fab-label">Aggiungi locker</span>
+    </button>
+  </div>
+  <button id="btnAdd" title="Aggiungi" aria-label="Aggiungi">
     <svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>
   </button>
   <div id="crosshair"><div class="head"><span>📦</span></div><div class="stem"></div></div>
@@ -874,22 +995,42 @@
 <!-- Aggiungi locker -->
 <div id="addPanel" class="panel" role="dialog" aria-modal="true">
   <div class="grab"></div>
-  <div id="setTitle">📦 Nuovo locker</div>
+  <div class="add-hero">
+    <div class="add-hero-badge">📦</div>
+    <div>
+      <div class="add-hero-title">Nuovo locker</div>
+      <div class="add-hero-sub">Aiuta la community: aggiungi un punto che manca</div>
+    </div>
+  </div>
+
+  <div class="add-section-label">Corriere</div>
   <div id="addBrands"></div>
-  <div class="add-field">
-    <label for="add-name">Nome del punto (es. Supermercato, edificio…)</label>
-    <input id="add-name" type="text" placeholder="Es. Conad Via Roma">
+
+  <div class="add-section-label">Dettagli</div>
+  <div class="add-field-icon">
+    <span class="afi-ico">🏷️</span>
+    <div class="afi-body">
+      <label for="add-name">Nome del punto</label>
+      <input id="add-name" type="text" placeholder="Es. Conad Via Roma">
+    </div>
   </div>
-  <div class="add-field">
-    <label for="add-addr">Indirizzo</label>
-    <input id="add-addr" type="text" placeholder="Via, numero civico, città">
+  <div class="add-field-icon">
+    <span class="afi-ico">📍</span>
+    <div class="afi-body">
+      <label for="add-addr">Indirizzo</label>
+      <input id="add-addr" type="text" placeholder="Via, numero civico, città">
+    </div>
   </div>
-  <div class="add-field">
-    <label for="add-howto">🧭 Come trovarlo (facoltativo)</label>
-    <input id="add-howto" type="text" placeholder="Es. Dietro il benzinaio, scendi le scale a destra…">
+  <div class="add-field-icon">
+    <span class="afi-ico">🧭</span>
+    <div class="afi-body">
+      <label for="add-howto">Come trovarlo <span class="afi-opt">facoltativo</span></label>
+      <input id="add-howto" type="text" placeholder="Es. Dietro il benzinaio, scendi le scale a destra…">
+    </div>
   </div>
+
   <div id="addCoords"></div>
-  <button id="addSubmit">Pubblica locker</button>
+  <button id="addSubmit" class="set-btn primary">📦 Pubblica locker</button>
   <div id="addNoShare">📍 Verrà salvato <b>solo sul tuo telefono</b>: nessun registro pubblico Supabase configurato. Vai in ⚙️ Impostazioni per collegarlo (guida-supabase.md).</div>
 </div>
 
@@ -923,7 +1064,7 @@
    Geocoding: Nominatim (OpenStreetMap)
    ============================================================ */
 
-const APP_VERSION = '6.2';
+const APP_VERSION = '7.0';
 const HOME_BBOX = '41.40,11.73,42.30,13.30';   // vista iniziale: Roma e provincia
 let currentBBox = HOME_BBOX;                       // area effettivamente caricata in questo momento
 
@@ -1718,7 +1859,7 @@ function openRoutePanel(){
   $('routePanel').classList.add('show');
   $('backdrop').classList.add('show');
 }
-$('btnRoute').onclick = openRoutePanel;
+// (apertura Giro Spedizioni ora gestita dal ventaglio sul pulsante +)
 
 $('routeFind').onclick = () => {
   if (routeSelected.size < 2){ toast('Scegli almeno 2 corrieri'); return; }
@@ -1788,23 +1929,47 @@ function openAddForm(){
   $('backdrop').classList.add('show');
 }
 
-let placing = false;
+let placing = false, fabOpen = false;
+
+function toggleFab(){
+  fabOpen = !fabOpen;
+  $('fabMenu').classList.toggle('open', fabOpen);
+  $('btnAdd').classList.toggle('open', fabOpen);
+}
+function closeFab(){
+  fabOpen = false;
+  $('fabMenu').classList.remove('open');
+  $('btnAdd').classList.remove('open');
+}
 $('btnAdd').onclick = () => {
+  if (placing) return;
+  toggleFab();
+};
+
+function startPlacing(){
   placing = true;
   $('crosshair').classList.add('show');
   $('placeBar').classList.add('show');
   $('btnAdd').style.display = 'none';
+  $('fabMenu').style.display = 'none';
   $('btnList').style.display = 'none';
-};
+}
 function exitPlacing(){
   placing = false;
   $('crosshair').classList.remove('show');
   $('placeBar').classList.remove('show');
   $('btnAdd').style.display = 'flex';
+  $('fabMenu').style.display = 'flex';
   $('btnList').style.display = 'flex';
 }
 $('placeCancel').onclick = exitPlacing;
 $('placeConfirm').onclick = () => { exitPlacing(); openAddForm(); };
+
+$('fabAddLocker').onclick = () => { closeFab(); startPlacing(); };
+$('fabRoute').onclick = () => { closeFab(); openRoutePanel(); };
+
+// Tocco fuori dal ventaglio: lo richiude
+map.on('click', () => { if (fabOpen) closeFab(); });
 
 $('addSubmit').onclick = async () => {
   const c = map.getCenter();
@@ -1814,7 +1979,7 @@ $('addSubmit').onclick = async () => {
   if (!name){ toast('Aggiungi almeno un nome per il punto'); return; }
 
   const btn = $('addSubmit');
-  btn.disabled = true; btn.textContent = 'Pubblico…';
+  btn.disabled = true; btn.textContent = '📦 Pubblico…';
 
   const point = {
     id: 'mine/' + Date.now(),
@@ -1849,7 +2014,7 @@ $('addSubmit').onclick = async () => {
     lockers = mergeCustom(lockers, fetchLocalAdded(currentBBox));
     renderChips(); renderMarkers();
   }
-  btn.disabled = false; btn.textContent = 'Pubblica locker';
+  btn.disabled = false; btn.textContent = '📦 Pubblica locker';
 };
 
 // ----- Cache locale: avvio istantaneo e offline -----
@@ -1915,7 +2080,7 @@ function makeIcon(brandKey, starred = false){
   const star = starred ? '<div class="pin-star">★</div>' : '';
   return L.divIcon({
     className:'',
-    html:`<div class="pin${starred ? ' starred' : ''}" style="background:${b.color};color:${b.text}"><span>${b.letter}</span>${star}</div>`,
+    html:`<div class="pin${starred ? ' starred' : ''}" style="--pin-color:${b.color};color:${b.text}"><span>${b.letter}</span>${star}</div>`,
     iconSize:[28,28], iconAnchor:[14,26]
   });
 }
