@@ -408,6 +408,26 @@
   .sh-btn svg{width:17px;height:17px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
 
   /* Stato in tempo reale */
+  /* Countdown corriere */
+  .courier-badge{
+    font-size:13px;font-weight:800;text-align:center;padding:11px 14px;
+    border-radius:14px;margin-top:14px;border:1.5px solid var(--line);
+    background:var(--bg);color:var(--ink-2);
+    box-shadow:inset 0 1px 3px rgba(0,0,0,.05);
+  }
+  .courier-badge.urgent{
+    background:color-mix(in srgb, var(--danger) 14%, var(--bg));color:var(--danger);
+    border-color:color-mix(in srgb, var(--danger) 40%, var(--line));
+    animation:courierPulse 2s ease-in-out infinite;
+  }
+  @keyframes courierPulse{0%,100%{box-shadow:inset 0 1px 3px rgba(0,0,0,.05), 0 0 0 0 color-mix(in srgb, var(--danger) 35%, transparent)}50%{box-shadow:inset 0 1px 3px rgba(0,0,0,.05), 0 0 0 5px color-mix(in srgb, var(--danger) 0%, transparent)}}
+  .courier-badge.active{
+    background:color-mix(in srgb, #2E7CF6 14%, var(--bg));color:#2E7CF6;
+    border-color:color-mix(in srgb, #2E7CF6 40%, var(--line));
+  }
+  .courier-badge.done{opacity:.6}
+  .courier-note{font-size:10.5px;color:var(--ink-2);font-weight:500;text-align:center;margin-top:6px;font-style:italic;opacity:.75}
+
   .status-box{margin:14px 0 18px}
   .status-badge{
     font-size:12px;font-weight:700;text-align:center;padding:8px 10px;
@@ -837,6 +857,9 @@
   <div id="sh-dist"></div>
   <div class="sh-rows" id="sh-rows"></div>
 
+  <div id="courier-badge" class="courier-badge"></div>
+  <div class="courier-note">Stima statistica sugli orari tipici di ritiro, non tracciamento reale del furgone</div>
+
   <div class="status-box">
     <div id="status-badge" class="status-badge neutral">Nessuna segnalazione nelle ultime 24 ore</div>
     <div class="status-btns">
@@ -1064,7 +1087,7 @@
    Geocoding: Nominatim (OpenStreetMap)
    ============================================================ */
 
-const APP_VERSION = '7.0';
+const APP_VERSION = '7.2';
 const HOME_BBOX = '41.40,11.73,42.30,13.30';   // vista iniziale: Roma e provincia
 let currentBBox = HOME_BBOX;                       // area effettivamente caricata in questo momento
 
@@ -1412,7 +1435,7 @@ async function fetchSupabaseApproved(bbox){
   }finally{ clearTimeout(timer); }
 }
 
-async function submitToSupabase(row, table = 'lockers'){
+async function submitToSupabase(row, table = 'lockers', withPendingStatus = true){
   const cfg = sbConfig();
   if (!cfg) return false;
   const ctrl = new AbortController();
@@ -1424,7 +1447,7 @@ async function submitToSupabase(row, table = 'lockers'){
         'apikey': cfg.key, 'Authorization': 'Bearer ' + cfg.key,
         'Content-Type':'application/json', 'Prefer':'return=minimal'
       },
-      body: JSON.stringify({ ...row, status:'pending' }),
+      body: JSON.stringify(withPendingStatus ? { ...row, status:'pending' } : row),
       signal: ctrl.signal
     });
     if (!r.ok) throw new Error('HTTP ' + r.status);
@@ -1596,6 +1619,39 @@ $('cm-send').onclick = async () => {
   }
 };
 
+// ----- Countdown corriere (stima statistica, nessun dato reale del furgone) -----
+// Logica "cut-off" in stile Amazon: un orario limite fisso, calcolato sull'orologio
+// del telefono. Zero rete, zero database, aggiorna da solo mentre la scheda resta aperta.
+const COURIER_CUTOFF_HOUR = 14;       // entro le 14:00: countdown
+const COURIER_WINDOW_END_HOUR = 15;   // 14:00–15:00: "ritiro in corso"
+
+function courierCountdownInfo(){
+  const now = new Date();
+  const hDec = now.getHours() + now.getMinutes() / 60;
+
+  if (hDec < COURIER_CUTOFF_HOUR){
+    const totalMin = Math.round((COURIER_CUTOFF_HOUR - hDec) * 60);
+    const hh = Math.floor(totalMin / 60), mm = totalMin % 60;
+    const parts = [];
+    if (hh > 0) parts.push(`${hh} ${hh === 1 ? 'ora' : 'ore'}`);
+    if (mm > 0 || !hh) parts.push(`${mm} min`);
+    return { level:'urgent', text: `⏱️ Mancano ${parts.join(' e ')} al ritiro stimato di oggi. Fai in fretta!` };
+  }
+  if (hDec < COURIER_WINDOW_END_HOUR){
+    return { level:'active', text: '🚚 Ritiro in corso in questa zona…' };
+  }
+  return { level:'done', text: '💤 Ritiro di oggi probabilmente già effettuato. Prossima partenza: domani mattina' };
+}
+
+function renderCourierBadge(){
+  if (!$('sheet').classList.contains('show')) return;
+  const badge = $('courier-badge');
+  const info = courierCountdownInfo();
+  badge.className = 'courier-badge ' + info.level;
+  badge.textContent = info.text;
+}
+setInterval(renderCourierBadge, 60000);   // resta "vivo" se l'utente tiene la scheda aperta
+
 // ----- Stato in tempo reale (Funzionante / Pieno-Guasto) -----
 // Voti semplici, senza moderazione (basso rischio, info che si autocorregge
 // da sola nel tempo): letti solo quelli delle ultime 24 ore lato database.
@@ -1662,7 +1718,7 @@ async function voteStatus(stato){
 
   $('status-ok').disabled = $('status-bad').disabled = true;
   try{
-    await submitToSupabase({ locker_id: currentLocker.id, stato }, 'status_votes');
+    await submitToSupabase({ locker_id: currentLocker.id, stato }, 'status_votes', false);
     setStatusCooldown(currentLocker.id);
     toast(stato === 'ok' ? 'Grazie! Segnato come funzionante 🟢' : 'Grazie! Segnalato pieno/guasto 🔴');
     renderStatus({ stato, created_at: new Date().toISOString() });
@@ -2272,6 +2328,7 @@ function openSheet(lk){
   resetCommentForm();
   loadComments(lk.id);
   loadStatus(lk.id);
+  renderCourierBadge();
   refreshWalletButton();
 
   closePanels();
