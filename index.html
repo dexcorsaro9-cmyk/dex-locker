@@ -27,6 +27,7 @@
     --danger:#D22730;
     --shadow:0 8px 28px rgba(20,22,30,.14);
     --chip-bg:#FFFFFF;
+    --tabbar-h:62px;
   }
   @media (prefers-color-scheme: dark){
     :root{
@@ -55,6 +56,27 @@
   #sheet, #sheet *{-webkit-user-select:text;user-select:text}
   button{font-family:inherit}
 
+  /* Splash screen d'avvio */
+  #splash{
+    position:fixed;inset:0;z-index:99999;
+    background:#12151C;
+    display:flex;flex-direction:column;align-items:center;justify-content:center;gap:20px;
+    transition:opacity .5s ease;
+  }
+  #splash.hide{opacity:0;pointer-events:none}
+  .splash-icon{
+    width:96px;height:96px;border-radius:26px;overflow:hidden;
+    box-shadow:0 14px 34px rgba(0,0,0,.45), 0 0 0 1px rgba(255,255,255,.06);
+    animation:splashPop .6s cubic-bezier(.34,1.56,.64,1);
+  }
+  .splash-icon img{width:100%;height:100%;display:block}
+  .splash-wordmark{height:34px;width:auto;animation:splashFadeUp .5s ease .18s both}
+  @keyframes splashPop{from{transform:scale(.55);opacity:0}to{transform:scale(1);opacity:1}}
+  @keyframes splashFadeUp{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
+  @media (prefers-reduced-motion: reduce){
+    .splash-icon, .splash-wordmark{animation:none}
+  }
+
   /* ---------- Header ---------- */
   header{
     display:flex;align-items:center;justify-content:space-between;
@@ -73,7 +95,6 @@
     .wordmark-dark{display:block}
   }
   #subtitle{font-size:12px;color:var(--ink-2);font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-  .actions{display:flex;gap:8px;flex-shrink:0}
   .icon-btn{
     width:40px;height:40px;border-radius:12px;border:1.5px solid var(--line);
     background:var(--surface);color:var(--ink);cursor:pointer;
@@ -236,20 +257,23 @@
   #btnArea.show{display:flex}
   #btnArea:active{transform:translateX(-50%) scale(.95)}
 
-  #btnList{
-    position:absolute;bottom:calc(20px + env(safe-area-inset-bottom));left:14px;z-index:800;
-    height:46px;padding:0 18px;border-radius:999px;border:none;cursor:pointer;
-    background:linear-gradient(165deg, color-mix(in srgb, var(--ink) 100%, white 15%), var(--ink));
-    color:var(--bg);font-size:14px;font-weight:800;
-    box-shadow:0 4px 0 rgba(0,0,0,.35), 0 8px 18px rgba(0,0,0,.25), inset 0 1px 1px rgba(255,255,255,.1);
-    display:flex;align-items:center;gap:9px;
-    transition:transform .15s cubic-bezier(.34,1.56,.64,1), box-shadow .15s ease;
+  #mapControls{
+    position:absolute;top:12px;left:12px;z-index:800;
+    display:flex;flex-direction:column;gap:8px;
   }
-  #btnList:active{transform:scale(.95) translateY(2px);box-shadow:0 2px 0 rgba(0,0,0,.35), 0 4px 10px rgba(0,0,0,.2)}
-  #btnList svg{width:17px;height:17px;stroke:var(--accent);fill:none;stroke-width:2.5;stroke-linecap:round}
+  .map-ctrl-btn{
+    width:40px;height:40px;border-radius:12px;border:none;cursor:pointer;
+    background:var(--surface);color:var(--ink);
+    display:flex;align-items:center;justify-content:center;
+    box-shadow:0 1px 0 rgba(255,255,255,.5) inset, 0 3px 8px rgba(0,0,0,.18);
+    transition:transform .15s cubic-bezier(.34,1.56,.64,1);
+  }
+  .map-ctrl-btn:active{transform:scale(.9)}
+  .map-ctrl-btn svg{width:19px;height:19px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+  .map-ctrl-btn.spin svg{animation:rot 1s linear infinite}
 
   #btnAdd{
-    position:absolute;bottom:calc(20px + env(safe-area-inset-bottom));right:14px;z-index:800;
+    position:absolute;bottom:calc(20px + env(safe-area-inset-bottom) + var(--tabbar-h));right:14px;z-index:800;
     width:56px;height:56px;border-radius:50%;border:none;cursor:pointer;
     background:linear-gradient(165deg, color-mix(in srgb, var(--accent) 100%, white 22%), var(--accent) 55%, color-mix(in srgb, var(--accent) 100%, black 10%));
     color:var(--accent-ink);
@@ -263,7 +287,7 @@
 
   #fabMenu{
     position:absolute;right:14px;z-index:799;
-    bottom:calc(20px + env(safe-area-inset-bottom) + 70px);
+    bottom:calc(20px + env(safe-area-inset-bottom) + var(--tabbar-h) + 70px);
     display:flex;flex-direction:column;align-items:flex-end;gap:12px;
   }
   .fab-opt{
@@ -302,19 +326,36 @@
   }
   #crosshair .head span{transform:rotate(45deg);font-size:15px}
 
-  #placeBar{
+  #placeHint{
     position:absolute;top:12px;left:50%;transform:translateX(-50%);z-index:800;
-    display:none;align-items:center;gap:10px;
-    background:var(--ink);color:var(--bg);padding:9px 10px 9px 16px;border-radius:999px;
-    box-shadow:var(--shadow);font-size:13px;font-weight:700;
+    display:none;
+    background:var(--ink);color:var(--bg);padding:9px 16px;border-radius:999px;
+    box-shadow:var(--shadow);font-size:12.5px;font-weight:700;white-space:nowrap;
+  }
+  #placeHint.show{display:block}
+
+  #placeBar{
+    position:absolute;left:50%;transform:translateX(-50%);z-index:800;
+    bottom:calc(20px + env(safe-area-inset-bottom) + var(--tabbar-h));
+    display:none;align-items:center;gap:22px;
   }
   #placeBar.show{display:flex}
-  #placeBar button{
-    border:none;border-radius:999px;cursor:pointer;font-family:inherit;font-weight:800;font-size:13px;
-    height:34px;padding:0 16px;
+  .place-btn{
+    width:60px;height:60px;border-radius:50%;border:none;cursor:pointer;
+    display:flex;align-items:center;justify-content:center;
+    transition:transform .15s cubic-bezier(.34,1.56,.64,1), box-shadow .15s ease;
   }
-  #placeBar .go{background:var(--accent);color:var(--accent-ink)}
-  #placeBar .cancel{background:transparent;color:var(--bg);opacity:.7}
+  .place-btn svg{width:26px;height:26px;stroke:currentColor;fill:none;stroke-width:3;stroke-linecap:round;stroke-linejoin:round}
+  .place-btn.cancel{
+    background:var(--surface);color:var(--danger);
+    box-shadow:0 4px 0 rgba(0,0,0,.12), 0 8px 18px rgba(0,0,0,.18), inset 0 1px 1px rgba(255,255,255,.6);
+  }
+  .place-btn.confirm{
+    background:linear-gradient(165deg, color-mix(in srgb, var(--accent) 100%, white 22%), var(--accent) 55%, color-mix(in srgb, var(--accent) 100%, black 10%));
+    color:var(--accent-ink);
+    box-shadow:0 4px 0 color-mix(in srgb, var(--accent) 100%, black 25%), 0 10px 22px color-mix(in srgb, var(--accent) 55%, transparent), inset 0 2px 2px rgba(255,255,255,.5);
+  }
+  .place-btn:active{transform:scale(.92) translateY(2px);box-shadow:0 2px 0 rgba(0,0,0,.15)}
 
   #loader{
     position:absolute;inset:0;z-index:900;display:none;
@@ -331,7 +372,7 @@
   #loader p{font-size:13px;font-weight:600;color:var(--ink-2)}
 
   #toast{
-    position:absolute;bottom:calc(80px + env(safe-area-inset-bottom));left:50%;
+    position:absolute;bottom:calc(80px + env(safe-area-inset-bottom) + var(--tabbar-h));left:50%;
     transform:translateX(-50%) translateY(20px);z-index:950;
     background:var(--ink);color:var(--bg);
     padding:11px 18px;border-radius:12px;font-size:13px;font-weight:600;
@@ -340,6 +381,29 @@
     max-width:86%;text-align:center;
   }
   #toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+
+  /* Barra di navigazione in basso */
+  #tabbar{
+    position:fixed;left:0;right:0;bottom:0;z-index:900;
+    display:flex;
+    background:color-mix(in srgb, var(--surface) 90%, transparent);
+    -webkit-backdrop-filter:blur(20px) saturate(1.4);
+    backdrop-filter:blur(20px) saturate(1.4);
+    border-top:1px solid var(--line);
+    padding:8px 6px calc(6px + env(safe-area-inset-bottom));
+    box-shadow:0 -4px 16px rgba(0,0,0,.06);
+  }
+  .tab-item{
+    flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;
+    padding:6px 4px;border:none;background:transparent;cursor:pointer;
+    color:var(--ink-2);font-family:inherit;font-size:10.5px;font-weight:700;
+    border-radius:12px;transition:transform .15s cubic-bezier(.34,1.56,.64,1), color .15s ease;
+  }
+  .tab-item:active{transform:scale(.92)}
+  .tab-item svg{width:23px;height:23px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;transition:transform .2s cubic-bezier(.34,1.56,.64,1)}
+  .tab-item.active{color:var(--accent-ink);background:color-mix(in srgb, var(--accent) 16%, transparent)}
+  @media (prefers-color-scheme: dark){ .tab-item.active{color:var(--accent)} }
+  .tab-item.active svg{transform:translateY(-1px) scale(1.06)}
 
   /* ---------- Pannelli (sheet dettaglio + lista vicini + impostazioni) ---------- */
   #backdrop{
@@ -626,7 +690,29 @@
   }
   .add-section-label:first-of-type{margin-top:0}
 
-  #addBrands{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:4px}
+  #addBrands{display:grid;grid-template-columns:repeat(4, 1fr);gap:12px;margin-bottom:4px}
+  .brand-tile{
+    display:flex;flex-direction:column;align-items:center;gap:6px;
+    border:none;background:transparent;cursor:pointer;padding:2px;
+    transition:transform .15s cubic-bezier(.34,1.56,.64,1);
+  }
+  .brand-tile:active{transform:scale(.9)}
+  .bt-icon{
+    width:52px;height:52px;border-radius:16px;
+    display:flex;align-items:center;justify-content:center;
+    font-size:18px;font-weight:800;
+    background:linear-gradient(145deg, color-mix(in srgb, var(--pin-color) 100%, white 30%) 0%, var(--pin-color) 55%, color-mix(in srgb, var(--pin-color) 100%, black 15%) 100%);
+    box-shadow:0 3px 8px rgba(0,0,0,.2), inset 0 2px 2px rgba(255,255,255,.5), inset 0 -3px 4px rgba(0,0,0,.15);
+    transition:box-shadow .15s ease, transform .15s cubic-bezier(.34,1.56,.64,1);
+  }
+  .brand-tile.sel .bt-icon{
+    box-shadow:0 0 0 3px var(--accent), 0 4px 10px rgba(0,0,0,.25), inset 0 2px 2px rgba(255,255,255,.5);
+    transform:scale(1.06);
+  }
+  .bt-check{width:24px;height:24px;stroke:currentColor;fill:none;stroke-width:3;stroke-linecap:round;stroke-linejoin:round}
+  .bt-label{font-size:10.5px;font-weight:700;color:var(--ink-2);text-align:center;line-height:1.2}
+  .brand-tile.sel .bt-label{color:var(--ink);font-weight:800}
+
   .ab-chip{
     display:flex;align-items:center;gap:7px;padding:9px 14px;border-radius:999px;cursor:pointer;
     border:1.5px solid var(--line);background:var(--chip-bg);color:var(--ink);font-size:13px;font-weight:700;
@@ -762,6 +848,12 @@
 </head>
 <body>
 
+<div id="splash">
+  <div class="splash-icon"><img src="apple-touch-icon.png" alt="Lokr"></div>
+  <img class="splash-wordmark" src="lokr-wordmark-transparent.png" alt="Lokr">
+</div>
+
+
 <header>
   <div class="brand">
     <div class="logo">
@@ -772,20 +864,6 @@
       <img class="wordmark wordmark-dark" src="lokr-wordmark-transparent.png" alt="Lokr">
       <p id="subtitle">Roma e provincia</p>
     </div>
-  </div>
-  <div class="actions">
-    <button class="icon-btn" id="btnLocate" title="Trova la mia posizione" aria-label="Trova la mia posizione">
-      <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3"/><circle cx="12" cy="12" r="8"/></svg>
-    </button>
-    <button class="icon-btn" id="btnReload" title="Aggiorna dati" aria-label="Aggiorna dati">
-      <svg viewBox="0 0 24 24"><path d="M21 12a9 9 0 1 1-2.6-6.3"/><path d="M21 3v6h-6"/></svg>
-    </button>
-    <button class="icon-btn" id="btnWallet" title="I miei pacchi" aria-label="I miei pacchi">
-      <svg viewBox="0 0 24 24"><path d="M21 8l-9-5-9 5 9 5 9-5z"/><path d="M3 8v8l9 5 9-5V8"/><path d="M12 13v8"/></svg>
-    </button>
-    <button class="icon-btn" id="btnSettings" title="Impostazioni" aria-label="Impostazioni">
-      <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .34 1.87l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.7 1.7 0 0 0-1.87-.34 1.7 1.7 0 0 0-1.03 1.56V21a2 2 0 1 1-4 0v-.09a1.7 1.7 0 0 0-1.11-1.56 1.7 1.7 0 0 0-1.87.34l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.7 1.7 0 0 0 .34-1.87 1.7 1.7 0 0 0-1.56-1.03H3a2 2 0 1 1 0-4h.09a1.7 1.7 0 0 0 1.56-1.11 1.7 1.7 0 0 0-.34-1.87l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.7 1.7 0 0 0 1.87.34h.01A1.7 1.7 0 0 0 10 3.09V3a2 2 0 1 1 4 0v.09a1.7 1.7 0 0 0 1.03 1.56 1.7 1.7 0 0 0 1.87-.34l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.7 1.7 0 0 0-.34 1.87v.01A1.7 1.7 0 0 0 20.91 10H21a2 2 0 1 1 0 4h-.09a1.7 1.7 0 0 0-1.51 1z"/></svg>
-    </button>
   </div>
 </header>
 
@@ -810,13 +888,17 @@
 
 <div id="mapwrap">
   <div id="map"></div>
+  <div id="mapControls">
+    <button class="map-ctrl-btn" id="btnLocate" title="Trova la mia posizione" aria-label="Trova la mia posizione">
+      <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3"/><circle cx="12" cy="12" r="8"/></svg>
+    </button>
+    <button class="map-ctrl-btn" id="btnReload" title="Aggiorna dati" aria-label="Aggiorna dati">
+      <svg viewBox="0 0 24 24"><path d="M21 12a9 9 0 1 1-2.6-6.3"/><path d="M21 3v6h-6"/></svg>
+    </button>
+  </div>
   <button id="btnArea">
     <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg>
     Cerca in quest'area
-  </button>
-  <button id="btnList">
-    <svg viewBox="0 0 24 24"><path d="M4 6h16M4 12h16M4 18h10"/></svg>
-    Vicini
   </button>
   <div id="fabMenu">
     <button class="fab-opt" id="fabRoute" style="--d:1">
@@ -832,14 +914,37 @@
     <svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>
   </button>
   <div id="crosshair"><div class="head"><span>📦</span></div><div class="stem"></div></div>
+  <div id="placeHint">📍 Trascina la mappa per posizionare il locker</div>
   <div id="placeBar">
-    <span>Trascina la mappa sul locker</span>
-    <button class="cancel" id="placeCancel">Annulla</button>
-    <button class="go" id="placeConfirm">Qui ✓</button>
+    <button class="place-btn cancel" id="placeCancel" aria-label="Annulla">
+      <svg viewBox="0 0 24 24"><path d="M18 6L6 18M6 6l12 12"/></svg>
+    </button>
+    <button class="place-btn confirm" id="placeConfirm" aria-label="Conferma qui">
+      <svg viewBox="0 0 24 24"><path d="M20 6L9 17l-5-5"/></svg>
+    </button>
   </div>
   <div id="loader"><div class="spinner"></div><p id="loaderText">Carico i locker…</p></div>
   <div id="toast" role="status"></div>
 </div>
+
+<nav id="tabbar" role="tablist" aria-label="Sezioni">
+  <button class="tab-item active" id="tabHome" data-tab="home">
+    <svg viewBox="0 0 24 24"><path d="M3 11l9-7 9 7"/><path d="M5 10v10h14V10"/></svg>
+    <span>Mappa</span>
+  </button>
+  <button class="tab-item" id="btnList" data-tab="list">
+    <svg viewBox="0 0 24 24"><path d="M4 6h16M4 12h16M4 18h10"/></svg>
+    <span>Vicini</span>
+  </button>
+  <button class="tab-item" id="btnWallet" data-tab="wallet">
+    <svg viewBox="0 0 24 24"><path d="M21 8l-9-5-9 5 9 5 9-5z"/><path d="M3 8v8l9 5 9-5V8"/><path d="M12 13v8"/></svg>
+    <span>Pacchi</span>
+  </button>
+  <button class="tab-item" id="btnSettings" data-tab="settings">
+    <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .34 1.87l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.7 1.7 0 0 0-1.87-.34 1.7 1.7 0 0 0-1.03 1.56V21a2 2 0 1 1-4 0v-.09a1.7 1.7 0 0 0-1.11-1.56 1.7 1.7 0 0 0-1.87.34l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.7 1.7 0 0 0 .34-1.87 1.7 1.7 0 0 0-1.56-1.03H3a2 2 0 1 1 0-4h.09a1.7 1.7 0 0 0 1.56-1.11 1.7 1.7 0 0 0-.34-1.87l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.7 1.7 0 0 0 1.87.34h.01A1.7 1.7 0 0 0 10 3.09V3a2 2 0 1 1 4 0v.09a1.7 1.7 0 0 0 1.03 1.56 1.7 1.7 0 0 0 1.87-.34l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.7 1.7 0 0 0-.34 1.87v.01A1.7 1.7 0 0 0 20.91 10H21a2 2 0 1 1 0 4h-.09a1.7 1.7 0 0 0-1.51 1z"/></svg>
+    <span>Impostazioni</span>
+  </button>
+</nav>
 
 <div id="backdrop"></div>
 
@@ -1087,7 +1192,7 @@
    Geocoding: Nominatim (OpenStreetMap)
    ============================================================ */
 
-const APP_VERSION = '7.2';
+const APP_VERSION = '8.2';
 const HOME_BBOX = '41.40,11.73,42.30,13.30';   // vista iniziale: Roma e provincia
 let currentBBox = HOME_BBOX;                       // area effettivamente caricata in questo momento
 
@@ -1143,7 +1248,7 @@ function saveFavs(){ lsSet('dexlocker-favs-v1', JSON.stringify([...favs])); }
 // ----- Mappa -----
 const isDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
 const map = L.map('map', { zoomControl:false, attributionControl:true }).setView([41.9028, 12.4964], 11);
-L.control.zoom({ position:'topright' }).addTo(map);
+// Zoom con pizzico a due dita (i pulsanti +/- sono superflui su mobile e sono stati rimossi)
 
 L.tileLayer(
   isDark
@@ -1172,6 +1277,13 @@ function toast(msg, ms=2600){
   clearTimeout(toastTimer); toastTimer = setTimeout(()=>t.classList.remove('show'), ms);
 }
 function setLoading(on){ $('loader').classList.toggle('show', on); }
+
+// Feedback aptico: micro-vibrazione su interazioni chiave. Su iOS Safari non
+// fa nulla (Apple non implementa questa API nei browser), ma è innocuo e
+// funziona su Android — pronto anche per la futura app nativa.
+function vibrate(pattern){
+  if (navigator.vibrate){ try{ navigator.vibrate(pattern); }catch(e){} }
+}
 
 // ----- Distanze -----
 function haversine(a, b){
@@ -1611,6 +1723,7 @@ $('cm-send').onclick = async () => {
     await submitToSupabase(row, 'comments');
     saveMyComment({ ...row, created_at: new Date().toISOString() });
     toast('Commento inviato: sarà visibile a tutti dopo l\'approvazione ✅', 3500);
+    vibrate(20);
     resetCommentForm();
     loadComments(currentLocker.id);
   }catch(e){
@@ -1721,6 +1834,7 @@ async function voteStatus(stato){
     await submitToSupabase({ locker_id: currentLocker.id, stato }, 'status_votes', false);
     setStatusCooldown(currentLocker.id);
     toast(stato === 'ok' ? 'Grazie! Segnato come funzionante 🟢' : 'Grazie! Segnalato pieno/guasto 🔴');
+    vibrate(20);
     renderStatus({ stato, created_at: new Date().toISOString() });
   }catch(e){
     toast('Invio non riuscito: controlla la connessione e riprova', 3200);
@@ -1852,6 +1966,7 @@ function openWalletPanel(){
   closePanels();
   $('walletPanel').classList.add('show');
   $('backdrop').classList.add('show');
+  setActiveTab('wallet');
 }
 $('btnWallet').onclick = openWalletPanel;
 
@@ -1964,9 +2079,14 @@ function renderAddBrands(){
   box.innerHTML = '';
   for (const [key, b] of Object.entries(BRANDS)){
     if (key === 'altro') continue;
+    const sel = addSelectedBrand === key;
     const c = document.createElement('button');
-    c.className = 'ab-chip' + (addSelectedBrand === key ? ' sel' : '');
-    c.innerHTML = `<span class="dot" style="background:${b.color}"></span>${b.name}`;
+    c.className = 'brand-tile' + (sel ? ' sel' : '');
+    c.innerHTML = `
+      <span class="bt-icon" style="--pin-color:${b.color};color:${b.text}">
+        ${sel ? '<svg viewBox="0 0 24 24" class="bt-check"><path d="M20 6L9 17l-5-5"/></svg>' : b.letter}
+      </span>
+      <span class="bt-label">${b.name}</span>`;
     c.onclick = () => { addSelectedBrand = key; renderAddBrands(); };
     box.appendChild(c);
   }
@@ -2005,18 +2125,20 @@ $('btnAdd').onclick = () => {
 function startPlacing(){
   placing = true;
   $('crosshair').classList.add('show');
+  $('placeHint').classList.add('show');
   $('placeBar').classList.add('show');
   $('btnAdd').style.display = 'none';
   $('fabMenu').style.display = 'none';
-  $('btnList').style.display = 'none';
+  $('tabbar').style.display = 'none';
 }
 function exitPlacing(){
   placing = false;
   $('crosshair').classList.remove('show');
+  $('placeHint').classList.remove('show');
   $('placeBar').classList.remove('show');
   $('btnAdd').style.display = 'flex';
   $('fabMenu').style.display = 'flex';
-  $('btnList').style.display = 'flex';
+  $('tabbar').style.display = 'flex';
 }
 $('placeCancel').onclick = exitPlacing;
 $('placeConfirm').onclick = () => { exitPlacing(); openAddForm(); };
@@ -2053,6 +2175,7 @@ $('addSubmit').onclick = async () => {
       });
       const mine = loadLocalAdded(); mine.push({ ...point, custom:true, pending:true }); saveLocalAdded(mine);
       toast('Proposta inviata: sarà visibile a tutti dopo l\'approvazione ✅', 3800);
+      vibrate(20);
       closePanels();
       lockers = mergeCustom(lockers, fetchLocalAdded(currentBBox));
       renderChips(); renderMarkers();
@@ -2066,6 +2189,7 @@ $('addSubmit').onclick = async () => {
   } else {
     const mine = loadLocalAdded(); mine.push({ ...point, custom:true }); saveLocalAdded(mine);
     toast('Locker salvato sul tuo telefono 📍', 3000);
+    vibrate(20);
     closePanels();
     lockers = mergeCustom(lockers, fetchLocalAdded(currentBBox));
     renderChips(); renderMarkers();
@@ -2276,6 +2400,7 @@ function formatHours(oh){
 }
 
 function openSheet(lk){
+  vibrate(12);
   currentLocker = lk;
   const b = BRANDS[lk.brand];
   const t = lk.tags;
@@ -2328,25 +2453,29 @@ function openSheet(lk){
   resetCommentForm();
   loadComments(lk.id);
   loadStatus(lk.id);
-  renderCourierBadge();
   refreshWalletButton();
 
   closePanels();
   $('sheet').classList.add('show');
   $('backdrop').classList.add('show');
   $('sheet').style.borderTopColor = b.color;
+  renderCourierBadge();
 }
 
 $('sh-fav').onclick = () => {
   if (!currentLocker) return;
   const id = currentLocker.id;
-  if (favs.has(id)){ favs.delete(id); toast('Rimosso dai preferiti'); }
-  else { favs.add(id); toast('Salvato nei preferiti ★'); }
+  if (favs.has(id)){ favs.delete(id); toast('Rimosso dai preferiti'); vibrate([10,40,10]); }
+  else { favs.add(id); toast('Salvato nei preferiti ★'); vibrate(18); }
   saveFavs();
   $('sh-fav').classList.toggle('on', favs.has(id));
   renderChips();
   if (favOnly) renderMarkers();
 };
+
+function setActiveTab(name){
+  document.querySelectorAll('.tab-item').forEach(el => el.classList.toggle('active', el.dataset.tab === name));
+}
 
 function closePanels(){
   $('sheet').classList.remove('show');
@@ -2356,8 +2485,10 @@ function closePanels(){
   $('routePanel').classList.remove('show');
   $('walletPanel').classList.remove('show');
   $('backdrop').classList.remove('show');
+  setActiveTab('home');
 }
 $('backdrop').onclick = closePanels;
+$('tabHome').onclick = closePanels;
 for (const pid of ['sheet','listPanel','settingsPanel','addPanel','routePanel','walletPanel']){
   let touchY = null;
   const el = $(pid);
@@ -2417,6 +2548,7 @@ function openList(){
   $('listPanel').classList.add('show');
   $('backdrop').classList.add('show');
   $('listRows').scrollTop = 0;
+  setActiveTab('list');
 }
 $('btnList').onclick = openList;
 $('lref').querySelectorAll('.lref-chip').forEach(ch => {
@@ -2633,6 +2765,7 @@ function openSettings(){
   closePanels();
   $('settingsPanel').classList.add('show');
   $('backdrop').classList.add('show');
+  setActiveTab('settings');
 }
 $('btnSettings').onclick = openSettings;
 
@@ -2738,6 +2871,21 @@ document.querySelectorAll('.panel input, .panel textarea, #devPwInput').forEach(
   });
 });
 
+// ----- Splash screen d'avvio -----
+const SPLASH_MIN_MS = 700, SPLASH_MAX_MS = 3000;
+const splashStart = Date.now();
+function hideSplash(){
+  const el = $('splash');
+  if (!el || el.classList.contains('hide')) return;
+  el.classList.add('hide');
+  setTimeout(() => el.remove(), 500);
+}
+function scheduleHideSplash(){
+  const wait = Math.max(0, SPLASH_MIN_MS - (Date.now() - splashStart));
+  setTimeout(hideSplash, wait);
+}
+setTimeout(hideSplash, SPLASH_MAX_MS);   // rete di sicurezza se la rete è lenta
+
 // ----- Avvio -----
 loadPlaces();
 renderPlaceMarkers();
@@ -2749,6 +2897,7 @@ if (saved && Array.isArray(saved.lockers) && saved.lockers.length){
   renderMarkers();
   $('subtitle').textContent = `${lockers.length.toLocaleString('it-IT')} locker · ${saved.label || 'dati salvati'}`;
 }
+scheduleHideSplash();
 load(HOME_BBOX, 'Roma e provincia');
 </script>
 </body>
