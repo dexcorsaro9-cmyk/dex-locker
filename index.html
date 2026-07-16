@@ -265,8 +265,6 @@
     box-shadow:0 -10px 40px rgba(0,0,0,.3);
     padding:10px 20px calc(22px + env(safe-area-inset-bottom));
     transform:translateY(105%);transition:transform .3s cubic-bezier(.32,.72,.28,1);
-    /* Mai più alto dello schermo visibile: resta sempre sotto la barra del browser
-       e, se il contenuto è lungo, scorre internamente invece di essere tagliato */
     max-height:min(88dvh, calc(100dvh - env(safe-area-inset-top) - 28px));
     overflow-y:auto;
     -webkit-overflow-scrolling:touch;
@@ -310,6 +308,27 @@
   .sh-btn.primary{background:var(--accent);color:var(--accent-ink)}
   .sh-btn.secondary{background:var(--bg);color:var(--ink);border:1.5px solid var(--line)}
   .sh-btn svg{width:17px;height:17px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+
+  /* Stato in tempo reale */
+  .status-box{margin:14px 0 18px}
+  .status-badge{
+    font-size:12px;font-weight:700;text-align:center;padding:8px 10px;
+    border-radius:10px;margin-bottom:8px;background:var(--bg);color:var(--ink-2);
+    border:1.5px solid var(--line);
+  }
+  .status-badge.ok{background:color-mix(in srgb, #1FAE5A 16%, var(--bg));color:#1FAE5A;border-color:color-mix(in srgb, #1FAE5A 40%, var(--line))}
+  .status-badge.bad{background:color-mix(in srgb, var(--danger) 14%, var(--bg));color:var(--danger);border-color:color-mix(in srgb, var(--danger) 40%, var(--line))}
+  .status-btns{display:flex;gap:8px}
+  .status-btn{
+    flex:1;padding:12px;border-radius:12px;cursor:pointer;
+    font-family:inherit;font-size:13px;font-weight:800;
+    border:1.5px solid var(--line);background:var(--surface);color:var(--ink);
+    transition:transform .12s ease;
+  }
+  .status-btn:active{transform:scale(.96)}
+  .status-btn.ok:active{background:color-mix(in srgb, #1FAE5A 14%, var(--surface))}
+  .status-btn.bad:active{background:color-mix(in srgb, var(--danger) 14%, var(--surface))}
+  .status-btn:disabled{opacity:.45}
 
   /* Commenti e foto sul locker */
   .cm-title{
@@ -485,6 +504,35 @@
   #addNoShare.show{display:block}
   #addNoShare b{color:var(--ink)}
 
+  /* Password sviluppatore */
+  #devPwBackdrop{
+    position:fixed;inset:0;z-index:2000;background:rgba(10,12,18,.5);
+    opacity:0;pointer-events:none;transition:opacity .2s ease;
+  }
+  #devPwBackdrop.show{opacity:1;pointer-events:auto}
+  #devPwModal{
+    position:fixed;left:50%;top:50%;transform:translate(-50%,-50%) scale(.92);
+    z-index:2001;width:min(300px, calc(100vw - 48px));
+    background:var(--surface);border-radius:18px;padding:20px;
+    box-shadow:0 20px 60px rgba(0,0,0,.4);
+    opacity:0;pointer-events:none;transition:opacity .2s ease, transform .2s ease;
+  }
+  #devPwModal.show{opacity:1;pointer-events:auto;transform:translate(-50%,-50%) scale(1)}
+  .dpw-title{font-size:15px;font-weight:800;margin-bottom:12px;text-align:center}
+  #devPwInput{
+    width:100%;height:44px;border-radius:12px;border:1.5px solid var(--line);
+    background:var(--bg);color:var(--ink);padding:0 14px;text-align:center;
+    font-family:inherit;font-size:16px;font-weight:600;outline:none;margin-bottom:12px;
+    -webkit-user-select:text;user-select:text;
+  }
+  .dpw-btns{display:flex;gap:8px}
+  .dpw-btns button{
+    flex:1;padding:12px;border-radius:12px;border:none;cursor:pointer;
+    font-family:inherit;font-size:14px;font-weight:800;
+  }
+  #devPwCancel{background:var(--bg);color:var(--ink);border:1.5px solid var(--line) !important}
+  #devPwOk{background:var(--accent);color:var(--accent-ink)}
+
   @media (prefers-reduced-motion: reduce){
     *,*::before,*::after{animation-duration:.001s !important;transition-duration:.001s !important}
   }
@@ -579,6 +627,15 @@
   <div id="sh-addr"></div>
   <div id="sh-dist"></div>
   <div class="sh-rows" id="sh-rows"></div>
+
+  <div class="status-box">
+    <div id="status-badge" class="status-badge neutral">Nessuna segnalazione nelle ultime 24 ore</div>
+    <div class="status-btns">
+      <button id="status-ok" class="status-btn ok">🟢 Funzionante</button>
+      <button id="status-bad" class="status-btn bad">🔴 Pieno / Guasto</button>
+    </div>
+  </div>
+
   <div class="sh-btns">
     <a class="sh-btn secondary" id="sh-apple" target="_blank" rel="noopener">
       <svg viewBox="0 0 24 24"><path d="M12 21s-7-6.1-7-11a7 7 0 0 1 14 0c0 4.9-7 11-7 11z"/><circle cx="12" cy="10" r="2.5"/></svg>
@@ -589,6 +646,11 @@
       Indicazioni
     </a>
   </div>
+  <button class="sh-btn secondary" id="sh-share" style="width:100%;margin-top:10px">
+    <svg viewBox="0 0 24 24"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><path d="M8.6 13.5l6.8 4M15.4 6.5l-6.8 4"/></svg>
+    Condividi questo locker
+  </button>
+
 
   <div class="cm-title">💬 Commenti</div>
   <div id="cm-list"></div>
@@ -696,7 +758,7 @@
       <label for="set-sbkey">Chiave pubblica (anon key)</label>
       <input class="fld-input full" id="set-sbkey" type="text" placeholder="eyJ…" autocomplete="off">
       <button class="set-btn primary" id="set-sbsave">Salva registro pubblico</button>
-      <div class="set-hint">I locker proposti con "+" restano in attesa di approvazione (dalla dashboard Supabase) prima di comparire a tutti gli utenti. Guida completa: "guida-supabase.md"</div>
+      <div class="set-hint">Lascia vuoti questi campi per usare il registro predefinito dell'app. Compilali solo per collegare QUESTO dispositivo a un progetto Supabase diverso (es. per test), senza dover ripubblicare l'app. Guida completa: "guida-supabase.md"</div>
     </div>
     <button class="set-btn" id="set-devlock">
       <svg viewBox="0 0 24 24"><rect x="4" y="10" width="16" height="10" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></svg>
@@ -723,17 +785,32 @@
   <div id="addNoShare">📍 Verrà salvato <b>solo sul tuo telefono</b>: nessun registro pubblico Supabase configurato. Vai in ⚙️ Impostazioni per collegarlo (guida-supabase.md).</div>
 </div>
 
+<!-- Password sviluppatore (sostituisce prompt(), non supportato nelle app aggiunte alla Home su iOS) -->
+<div id="devPwBackdrop"></div>
+<div id="devPwModal" role="dialog" aria-modal="true">
+  <div class="dpw-title">🛠 Password sviluppatore</div>
+  <input id="devPwInput" type="password" placeholder="Password" autocomplete="off">
+  <div class="dpw-btns">
+    <button id="devPwCancel">Annulla</button>
+    <button id="devPwOk">Conferma</button>
+  </div>
+</div>
+
 <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet.markercluster/1.5.3/leaflet.markercluster.min.js"></script>
 <script>
 /* ============================================================
-   DEX LOCKER v2.0 — mappa dei locker per pacchi, Roma e provincia
+   DEX LOCKER — mappa dei locker per pacchi in tutta Italia
    Dati: OpenStreetMap via Overpass API (amenity=parcel_locker)
    Geocoding: Nominatim (OpenStreetMap)
    ============================================================ */
 
-const APP_VERSION = '4.1';
-const ROME_BBOX = '41.40,11.73,42.30,13.30';
+const APP_VERSION = '5.1';
+const HOME_BBOX = '41.40,11.73,42.30,13.30';   // vista iniziale: Roma e provincia
+let currentBBox = HOME_BBOX;                       // area effettivamente caricata in questo momento
+
+function areaLabel(bbox){ return bbox === HOME_BBOX ? 'Roma e provincia' : "quest'area"; }
+function reloadCurrentArea(){ return load(currentBBox, areaLabel(currentBBox), { isRefresh:true }); }
 
 const OVERPASS_ENDPOINTS = [
   'https://overpass-api.de/api/interpreter',
@@ -874,10 +951,7 @@ function refPointFor(mode){
 }
 
 // ----- Fetch da Overpass -----
-// minExpected: sotto questa soglia il risultato è sospetto (query troncata dal
-// server sotto carico) → si prova il server successivo e si tiene il migliore.
 async function fetchLockers(bbox, minExpected = 0){
-  // Include anche il vecchio schema di tagging OSM (vending_machine per pacchi)
   const query = `[out:json][timeout:50];(node["amenity"="parcel_locker"](${bbox});way["amenity"="parcel_locker"](${bbox});node["amenity"="vending_machine"]["vending"~"parcel_pickup|parcel_mail_in"](${bbox}););out center tags;`;
   let best = null, lastErr;
   for (const url of OVERPASS_ENDPOINTS){
@@ -894,12 +968,12 @@ async function fetchLockers(bbox, minExpected = 0){
       const data = await r.json();
       const truncated = data.remark && /timed out|runtime error/i.test(data.remark);
       const elements = data.elements || [];
-      if (!truncated && elements.length >= minExpected) return elements;   // risultato pieno e plausibile
-      if (!best || elements.length > best.length) best = elements;         // tieni il migliore finora
+      if (!truncated && elements.length >= minExpected) return elements;
+      if (!best || elements.length > best.length) best = elements;
     }catch(e){ lastErr = e; }
     finally{ clearTimeout(timer); }
   }
-  if (best && best.length) return best;   // meglio un risultato parziale che niente
+  if (best && best.length) return best;
   throw lastErr || new Error('Overpass non raggiungibile');
 }
 
@@ -927,12 +1001,9 @@ function parseElements(elements){
 }
 
 // ----- Fonte ufficiale InPost Italia -----
-// L'API pubblica serve 25 punti a pagina (parametri ignorati), ~450 pagine per
-// tutta Italia. Strategia: scansione completa una tantum in parallelo, poi la
-// rete resta salvata sul telefono per 7 giorni. Solo locker con stato "Operating".
 const IP_BASE = 'https://api-it-local-points.easypack24.net/v1/points';
 const IP_CACHE_KEY = 'dexlocker-inpost-v1';
-const IP_TTL = 7 * 24 * 3600 * 1000;   // 7 giorni
+const IP_TTL = 7 * 24 * 3600 * 1000;
 
 async function fetchInPostPage(page){
   const ctrl = new AbortController();
@@ -952,14 +1023,12 @@ function ipProgress(done, total){
 }
 
 async function loadInPostNetwork(){
-  // Cache valida? Usala
   try{
     const c = JSON.parse(lsGet(IP_CACHE_KEY));
     const ttl = c && c.partial ? 24 * 3600 * 1000 : IP_TTL;
     if (c && Array.isArray(c.points) && c.points.length && (Date.now() - c.ts) < ttl) return c.points;
   }catch(e){}
 
-  // Scansione completa in parallelo
   const first = await fetchInPostPage(1);
   const totalPages = first.total_pages || 1;
   const pages = [first];
@@ -971,7 +1040,7 @@ async function loadInPostNetwork(){
       const p = queue.shift();
       try{ pages.push(await fetchInPostPage(p)); }
       catch(e1){
-        try{ pages.push(await fetchInPostPage(p)); }   // un tentativo di recupero
+        try{ pages.push(await fetchInPostPage(p)); }
         catch(e2){ failed++; }
       }
       done++;
@@ -982,8 +1051,8 @@ async function loadInPostNetwork(){
 
   const points = [];
   for (const pg of pages) for (const p of (pg.items || [])){
-    if (p.status !== 'Operating') continue;                      // esclude quelli non ancora attivi
-    if (!(p.type || []).includes('parcel_locker')) continue;     // solo locker, non punti in negozio
+    if (p.status !== 'Operating') continue;
+    if (!(p.type || []).includes('parcel_locker')) continue;
     const lat = p.location?.latitude, lon = p.location?.longitude;
     if (lat == null || lon == null) continue;
     const ad = p.address_details || {};
@@ -1011,15 +1080,12 @@ async function fetchInPost(bbox){
   return all.filter(p => p.lat >= s && p.lat <= n && p.lon >= w && p.lon <= e);
 }
 
-// Fusione fonti: se un locker InPost di OSM è a <60 m da un punto ufficiale,
-// vince il dato ufficiale (più preciso e aggiornato)
 function mergeSources(osm, official){
   if (!official.length) return osm;
   const kept = osm.filter(o => o.brand !== 'inpost' || !official.some(f => haversine(o, f) < 60));
   return kept.concat(official);
 }
 
-// I punti personali si aggiungono solo se non duplicano un punto già noto (<40 m, stesso brand)
 function mergeCustom(base, custom){
   if (!custom.length) return base;
   const extra = custom.filter(c => !base.some(b => b.brand === c.brand && haversine(b, c) < 40));
@@ -1027,9 +1093,6 @@ function mergeCustom(base, custom){
 }
 
 // ----- Contributi utente: aggiungi locker in stile Waze -----
-// Se è configurata una fonte condivisa (SheetDB), il contributo viene inviato lì
-// e diventa visibile a chiunque usi l'app puntata sullo stesso foglio.
-// Senza fonte condivisa, il contributo resta salvato solo su questo telefono.
 const LOCAL_ADDED_KEY = 'dexlocker-mine-v1';
 let addSelectedBrand = 'inpost';
 
@@ -1050,12 +1113,18 @@ const SB_URL_KEY = 'dexlocker-sb-url';
 const SB_KEY_KEY = 'dexlocker-sb-key';
 
 function sbConfig(){
-  // Inserisci qui le tue chiavi vere mantenendo gli apici singoli ' '
-  const url = 'https://zrrinyakkunqlzbkfhkq.supabase.co'; 
-  const key = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InpycmlueWFra3VucWx6YmtmaGtxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODQxNDQ2NTMsImV4cCI6MjA5OTcyMDY1M30.DSaufkc8R6ziqqrVz8fxG3Oyv0U07NfdaJQp12-CRPs';
-  
-  return { url, key };
+  // Valori predefiniti: cotti nel codice, così l'app funziona per TUTTI gli utenti
+  // fin dal primo avvio, senza che nessuno debba configurare nulla.
+  const DEFAULT_URL = 'https://zrrinyakkunqlzbkfhkq.supabase.co';
+  const DEFAULT_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InpycmlueWFra3VucWx6YmtmaGtxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODQxNDQ2NTMsImV4cCI6MjA5OTcyMDY1M30.DSaufkc8R6ziqqrVz8fxG3Oyv0U07NfdaJQp12-CRPs';
+  // Se dal menu sviluppatore (⚙️ → 5 tocchi su "Versione") è stato salvato un
+  // valore diverso su QUESTO dispositivo, quello ha la precedenza (utile per
+  // testare un progetto Supabase alternativo senza ripubblicare l'app).
+  const url = (lsGet(SB_URL_KEY) || DEFAULT_URL).trim().replace(/\/$/, '');
+  const key = (lsGet(SB_KEY_KEY) || DEFAULT_KEY).trim();
+  return (url && key) ? { url, key } : null;
 }
+
 async function fetchSupabaseApproved(bbox){
   const cfg = sbConfig();
   if (!cfg) return [];
@@ -1132,7 +1201,6 @@ async function fetchComments(lockerId){
   }finally{ clearTimeout(timer); }
 }
 
-// Ridimensiona e comprime la foto prima di caricarla: risparmia dati e spazio
 function resizeImage(file){
   return new Promise((resolve, reject) => {
     const img = new Image();
@@ -1254,6 +1322,102 @@ $('cm-send').onclick = async () => {
   }
 };
 
+// ----- Stato in tempo reale (Funzionante / Pieno-Guasto) -----
+// Voti semplici, senza moderazione (basso rischio, info che si autocorregge
+// da sola nel tempo): letti solo quelli delle ultime 24 ore lato database.
+const STATUS_COOLDOWN_KEY = 'dexlocker-statuscooldown';
+const STATUS_COOLDOWN_MS = 5 * 60 * 1000;   // 5 minuti: evita doppi tap accidentali
+
+function statusCooldowns(){
+  try{ return JSON.parse(lsGet(STATUS_COOLDOWN_KEY)) || {}; }catch(e){ return {}; }
+}
+function setStatusCooldown(lockerId){
+  const c = statusCooldowns(); c[lockerId] = Date.now();
+  lsSet(STATUS_COOLDOWN_KEY, JSON.stringify(c));
+}
+function onStatusCooldown(lockerId){
+  const c = statusCooldowns();
+  return c[lockerId] && (Date.now() - c[lockerId]) < STATUS_COOLDOWN_MS;
+}
+
+async function fetchStatus(lockerId){
+  const cfg = sbConfig();
+  if (!cfg) return null;
+  const ctrl = new AbortController();
+  const timer = setTimeout(() => ctrl.abort(), 10000);
+  try{
+    const qs = `locker_id=eq.${encodeURIComponent(lockerId)}&select=stato,created_at&order=created_at.desc&limit=1`;
+    const r = await fetch(`${cfg.url}/rest/v1/status_votes?${qs}`, {
+      headers:{ 'apikey': cfg.key, 'Authorization': 'Bearer ' + cfg.key },
+      signal: ctrl.signal
+    });
+    if (!r.ok) throw new Error('HTTP ' + r.status);
+    const rows = await r.json();
+    return rows[0] || null;
+  }finally{ clearTimeout(timer); }
+}
+
+function renderStatus(row){
+  const badge = $('status-badge');
+  badge.classList.remove('ok', 'bad');
+  if (!row){
+    badge.textContent = 'Nessuna segnalazione nelle ultime 24 ore';
+    return;
+  }
+  const mins = Math.max(1, Math.round((Date.now() - new Date(row.created_at).getTime()) / 60000));
+  const when = mins < 60 ? `${mins} min fa` : `${Math.round(mins/60)} h fa`;
+  if (row.stato === 'ok'){
+    badge.classList.add('ok');
+    badge.textContent = `🟢 Segnalato funzionante ${when}`;
+  } else {
+    badge.classList.add('bad');
+    badge.textContent = `🔴 Segnalato pieno/guasto ${when}`;
+  }
+}
+
+async function loadStatus(lockerId){
+  renderStatus(null);
+  if (!sbConfig()) return;
+  try{ renderStatus(await fetchStatus(lockerId)); }catch(e){ /* silenzioso: non è un dato critico */ }
+}
+
+async function voteStatus(stato){
+  if (!currentLocker) return;
+  if (!sbConfig()){ toast('Segnalazioni non disponibili: registro pubblico non configurato'); return; }
+  if (onStatusCooldown(currentLocker.id)){ toast('Hai già segnalato questo locker di recente, grazie! 🙏'); return; }
+
+  $('status-ok').disabled = $('status-bad').disabled = true;
+  try{
+    await submitToSupabase({ locker_id: currentLocker.id, stato }, 'status_votes');
+    setStatusCooldown(currentLocker.id);
+    toast(stato === 'ok' ? 'Grazie! Segnato come funzionante 🟢' : 'Grazie! Segnalato pieno/guasto 🔴');
+    renderStatus({ stato, created_at: new Date().toISOString() });
+  }catch(e){
+    toast('Invio non riuscito: controlla la connessione e riprova', 3200);
+  }finally{
+    $('status-ok').disabled = $('status-bad').disabled = false;
+  }
+}
+$('status-ok').onclick  = () => voteStatus('ok');
+$('status-bad').onclick = () => voteStatus('pieno');
+
+// ----- Condivisione -----
+function shareLocker(lk){
+  const t = lk.tags;
+  const b = BRANDS[lk.brand];
+  const name = t.name || t.ref || ('Locker ' + b.name);
+  const addr = formatAddress(t);
+  const mapsUrl = `https://www.google.com/maps/dir/?api=1&destination=${lk.lat},${lk.lon}`;
+  const text = `📦 ${name}${addr ? ' — ' + addr : ''}\nEcco dove ritirare/spedire: ${mapsUrl}`;
+
+  if (navigator.share){
+    navigator.share({ text }).catch(() => {});   // l'utente può annullare: nessun errore da mostrare
+  } else {
+    window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, '_blank');
+  }
+}
+$('sh-share').onclick = () => { if (currentLocker) shareLocker(currentLocker); };
+
 function renderAddBrands(){
   const box = $('addBrands');
   box.innerHTML = '';
@@ -1279,7 +1443,6 @@ function openAddForm(){
   $('backdrop').classList.add('show');
 }
 
-// Modalità posizionamento (mirino stile Waze)
 let placing = false;
 $('btnAdd').onclick = () => {
   placing = true;
@@ -1321,24 +1484,23 @@ $('addSubmit').onclick = async () => {
         nome: name, via: addr, citta: '',
         lat: c.lat, lon: c.lng, orari: ''
       });
-      // Resta visibile solo a chi l'ha proposto finché non viene approvato da te in Supabase
       const mine = loadLocalAdded(); mine.push({ ...point, custom:true, pending:true }); saveLocalAdded(mine);
       toast('Proposta inviata: sarà visibile a tutti dopo l\'approvazione ✅', 3800);
       closePanels();
-      lockers = mergeCustom(lockers, fetchLocalAdded(ROME_BBOX));
+      lockers = mergeCustom(lockers, fetchLocalAdded(currentBBox));
       renderChips(); renderMarkers();
     }catch(e){
       toast('Invio al registro pubblico fallito: salvo solo sul tuo telefono', 3500);
       const mine = loadLocalAdded(); mine.push({ ...point, custom:true }); saveLocalAdded(mine);
       closePanels();
-      lockers = mergeCustom(lockers, fetchLocalAdded(ROME_BBOX));
+      lockers = mergeCustom(lockers, fetchLocalAdded(currentBBox));
       renderChips(); renderMarkers();
     }
   } else {
     const mine = loadLocalAdded(); mine.push({ ...point, custom:true }); saveLocalAdded(mine);
     toast('Locker salvato sul tuo telefono 📍', 3000);
     closePanels();
-    lockers = mergeCustom(lockers, fetchLocalAdded(ROME_BBOX));
+    lockers = mergeCustom(lockers, fetchLocalAdded(currentBBox));
     renderChips(); renderMarkers();
   }
   btn.disabled = false; btn.textContent = 'Pubblica locker';
@@ -1351,15 +1513,13 @@ const cache = {
   set(v){ lsSet(CACHE_KEY, JSON.stringify(v)); }
 };
 
-async function load(bbox, label){
+async function load(bbox, label, { isRefresh = false } = {}){
   const firstTime = !loadedOnce;
   if (firstTime) setLoading(true);
   $('btnReload').classList.add('spin');
   try{
-    const isProvince = bbox === ROME_BBOX;
-    // Le fonti viaggiano in parallelo: se una fallisce, bastano le altre
     const [osmRes, ipRes, sbRes] = await Promise.allSettled([
-      fetchLockers(bbox, isProvince ? 20 : 0),
+      fetchLockers(bbox, 0),
       fetchInPost(bbox),
       fetchSupabaseApproved(bbox)
     ]);
@@ -1370,13 +1530,16 @@ async function load(bbox, label){
       throw (osmRes.reason || new Error('Nessuna fonte dati raggiungibile'));
     }
     const fresh = mergeCustom(mergeCustom(mergeSources(osm, official), community), fetchLocalAdded(bbox));
-    // Non sostituire dati buoni con un risultato peggiore (una fonte momentaneamente giù)
-    if (loadedOnce && fresh.length < lockers.length * 0.5){
+    // La protezione "non sostituire con un risultato peggiore" ha senso solo
+    // quando si ricarica la STESSA area (es. tasto ↻): se l'utente si è
+    // spostato altrove, un'area più piccola è normale, non un errore.
+    if (isRefresh && loadedOnce && fresh.length < lockers.length * 0.5){
       toast('Una fonte dati è momentaneamente giù: tengo i dati già caricati', 3500);
       return;
     }
     lockers = fresh;
     loadedOnce = true;
+    currentBBox = bbox;
     renderChips();
     renderMarkers();
     $('subtitle').textContent = `${lockers.length.toLocaleString('it-IT')} locker · ${label}`;
@@ -1384,7 +1547,7 @@ async function load(bbox, label){
       ? `Trovati ${lockers.length.toLocaleString('it-IT')} locker 📦${official.length ? ` (${official.length.toLocaleString('it-IT')} da InPost ufficiale)` : ''}`
       : `Dati aggiornati: ${lockers.length.toLocaleString('it-IT')} locker ✓`);
     $('btnArea').classList.remove('show');
-    cache.set({ ts: Date.now(), label, lockers });
+    cache.set({ ts: Date.now(), label, lockers, bbox });
   }catch(e){
     const inSandbox = /claude|anthropic/i.test(location.hostname) || location.protocol === 'blob:';
     if (inSandbox){
@@ -1437,7 +1600,6 @@ function renderChips(){
   const box = $('chips');
   box.innerHTML = '';
 
-  // Chip preferiti
   const nFav = lockers.filter(l => favs.has(l.id)).length;
   const chipFav = document.createElement('button');
   chipFav.className = 'chip fav' + (favOnly ? ' on' : '');
@@ -1449,7 +1611,6 @@ function renderChips(){
   };
   box.appendChild(chipFav);
 
-  // Chip tutti
   const allOn = active.size === Object.keys(BRANDS).length;
   const chipAll = document.createElement('button');
   chipAll.className = 'chip all' + (allOn ? '' : ' off');
@@ -1460,7 +1621,6 @@ function renderChips(){
   };
   box.appendChild(chipAll);
 
-  // Chip per brand
   for (const [key, b] of Object.entries(BRANDS)){
     if (counts[key] === 0 && loadedOnce) continue;
     const c = document.createElement('button');
@@ -1507,7 +1667,6 @@ function openSheet(lk){
   const addr = formatAddress(t);
   $('sh-addr').textContent = addr || `Coordinate: ${lk.lat.toFixed(5)}, ${lk.lon.toFixed(5)}`;
 
-  // Distanze: dalla posizione/ricerca, da casa e dal lavoro
   const distEl = $('sh-dist');
   const dparts = [];
   if (userPos || searchPos){
@@ -1545,6 +1704,7 @@ function openSheet(lk){
 
   resetCommentForm();
   loadComments(lk.id);
+  loadStatus(lk.id);
 
   closePanels();
   $('sheet').classList.add('show');
@@ -1576,13 +1736,13 @@ for (const pid of ['sheet','listPanel','settingsPanel','addPanel']){
   const el = $(pid);
   el.addEventListener('touchstart', e => touchY = e.touches[0].clientY, {passive:true});
   el.addEventListener('touchmove', e => {
-    if (el.scrollTop > 0) return;   // non chiudere mentre si scorre il contenuto del pannello
+    if (el.scrollTop > 0) return;
     if (touchY !== null && e.touches[0].clientY - touchY > 70){ closePanels(); touchY = null; }
   }, {passive:true});
 }
 
 // ----- Lista locker più vicini -----
-let listMode = 'auto';   // 'auto' (posizione/ricerca) | 'home' | 'work'
+let listMode = 'auto';
 
 function renderLrefChips(){
   $('lref').querySelectorAll('.lref-chip').forEach(ch => {
@@ -1686,14 +1846,14 @@ $('searchForm').addEventListener('submit', async e => {
 function selectPlace(lat, lon, label){
   hideResults();
   searchPos = { lat, lon, label };
-  userPos = null;   // il punto cercato diventa il riferimento per le distanze
+  userPos = null;
   if (searchMarker) map.removeLayer(searchMarker);
   searchMarker = L.marker([lat, lon], {
     icon: L.divIcon({ className:'', html:'<div class="pin searched"><span>✦</span></div>', iconSize:[28,28], iconAnchor:[14,26] }),
     zIndexOffset: 900
   }).addTo(map);
   map.setView([lat, lon], 15);
-  openList();       // mostra subito i locker più vicini all'indirizzo
+  openList();
 }
 
 $('searchClear').onclick = () => {
@@ -1731,24 +1891,27 @@ $('btnLocate').onclick = () => {
 };
 
 // ----- Ricarica e ricerca in area -----
-$('btnReload').onclick = () => load(ROME_BBOX, 'Roma e provincia');
+$('btnReload').onclick = () => reloadCurrentArea();
 
 $('btnArea').onclick = () => {
   const b = map.getBounds();
   const bbox = [b.getSouth(), b.getWest(), b.getNorth(), b.getEast()].map(v => v.toFixed(4)).join(',');
-  load(bbox, 'area visualizzata');
+  load(bbox, "quest'area");
 };
 
-const romeBounds = L.latLngBounds([41.40,11.73],[42.30,13.30]);
+function bboxToLatLngBounds(bboxStr){
+  const [s, w, n, e] = bboxStr.split(',').map(Number);
+  return L.latLngBounds([s, w], [n, e]);
+}
 map.on('moveend', () => {
   if (!loadedOnce) return;
-  $('btnArea').classList.toggle('show', !romeBounds.contains(map.getCenter()));
+  // Mostra "Cerca in quest'area" quando la vista attuale non è più coperta
+  // dai dati già caricati: funziona ovunque, non solo su Roma.
+  const covered = bboxToLatLngBounds(currentBBox).contains(map.getBounds());
+  $('btnArea').classList.toggle('show', !covered);
 });
 
 // ----- Menu sviluppatore (nascosto, protetto da password) -----
-// ⚠️ Cambia questa password prima di pubblicare l'app: chiunque legga il codice
-// sorgente della pagina può vederla. È un filtro contro l'uso accidentale da
-// parte degli utenti normali, non una vera protezione crittografica.
 const DEV_PASSWORD = 'Scatto2026';
 const DEV_UNLOCKED_KEY = 'dexlocker-dev-unlocked';
 
@@ -1760,21 +1923,13 @@ function refreshDevSection(){
 let versionTaps = 0, versionTapTimer = null;
 $('set-version').style.cursor = 'default';
 $('set-version').addEventListener('click', () => {
-  if (devIsUnlocked()) return;   // già sbloccato, niente da fare
+  if (devIsUnlocked()) return;
   versionTaps++;
   clearTimeout(versionTapTimer);
   versionTapTimer = setTimeout(() => { versionTaps = 0; }, 2000);
   if (versionTaps >= 5){
     versionTaps = 0;
-    const pwd = prompt('Password sviluppatore:');
-    if (pwd === null) return;
-    if (pwd === DEV_PASSWORD){
-      lsSet(DEV_UNLOCKED_KEY, '1');
-      refreshDevSection();
-      toast('🛠 Modalità sviluppatore sbloccata');
-    } else {
-      toast('Password errata');
-    }
+    showDevPasswordPrompt();
   }
 });
 $('set-devlock').onclick = () => {
@@ -1782,6 +1937,35 @@ $('set-devlock').onclick = () => {
   refreshDevSection();
   toast('Modalità sviluppatore bloccata');
 };
+
+// prompt() non funziona nelle app aggiunte alla Home su iOS (Safari lo blocca
+// in modalità standalone): uso una piccola finestra fatta in casa al suo posto.
+function showDevPasswordPrompt(){
+  $('devPwInput').value = '';
+  $('devPwBackdrop').classList.add('show');
+  $('devPwModal').classList.add('show');
+  setTimeout(() => $('devPwInput').focus(), 250);
+}
+function hideDevPasswordPrompt(){
+  $('devPwBackdrop').classList.remove('show');
+  $('devPwModal').classList.remove('show');
+}
+function checkDevPassword(){
+  const pwd = $('devPwInput').value;
+  hideDevPasswordPrompt();
+  if (!pwd) return;
+  if (pwd === DEV_PASSWORD){
+    lsSet(DEV_UNLOCKED_KEY, '1');
+    refreshDevSection();
+    toast('🛠 Modalità sviluppatore sbloccata');
+  } else {
+    toast('Password errata');
+  }
+}
+$('devPwOk').onclick = checkDevPassword;
+$('devPwCancel').onclick = hideDevPasswordPrompt;
+$('devPwBackdrop').onclick = hideDevPasswordPrompt;
+$('devPwInput').addEventListener('keydown', e => { if (e.key === 'Enter') checkDevPassword(); });
 
 // ----- Impostazioni -----
 function openSettings(){
@@ -1825,8 +2009,8 @@ $('set-sbsave').onclick = () => {
   lsSet(SB_KEY_KEY, key);
   try{ localStorage.removeItem(CACHE_KEY); }catch(e){}
   closePanels();
-  toast(url && key ? 'Registro pubblico Supabase collegato ✓' : 'Registro pubblico Supabase scollegato');
-  load(ROME_BBOX, 'Roma e provincia');
+  toast(url && key ? 'Override salvato su questo dispositivo ✓' : 'Override rimosso: torno al registro predefinito');
+  reloadCurrentArea();
 };
 
 for (const k in PLACES){
@@ -1866,23 +2050,22 @@ $('set-clearcache').onclick = () => {
   renderChips();
   closePanels();
   toast('Cache svuotata: riscarico i dati…');
-  load(ROME_BBOX, 'Roma e provincia');
+  reloadCurrentArea();
 };
 
 $('set-refreship').onclick = () => {
   try{ localStorage.removeItem(IP_CACHE_KEY); }catch(e){}
   try{ localStorage.removeItem(CACHE_KEY); }catch(e){}
   lockers = [];
-  loadedOnce = false;         // mostra il loader con l'avanzamento della scansione
+  loadedOnce = false;
   cluster.clearLayers();
   renderChips();
   closePanels();
   $('loaderText').textContent = 'Scarico la rete InPost ufficiale…';
-  load(ROME_BBOX, 'Roma e provincia');
+  reloadCurrentArea();
 };
 
 $('set-reloadapp').onclick = () => {
-  // Ricarica forzata aggirando la cache del browser: utile dopo un aggiornamento
   const u = new URL(location.href);
   u.searchParams.set('r', Date.now());
   location.replace(u.toString());
@@ -1898,7 +2081,7 @@ $('set-clearmine').onclick = () => {
   try{ localStorage.removeItem(CACHE_KEY); }catch(e){}
   closePanels();
   toast('Proposte in attesa rimosse dal telefono');
-  load(ROME_BBOX, 'Roma e provincia');
+  reloadCurrentArea();
 };
 
 $('set-clearfavs').onclick = () => {
@@ -1908,12 +2091,11 @@ $('set-clearfavs').onclick = () => {
   saveFavs();
   favOnly = false;
   renderChips(); renderMarkers();
-  openSettings();   // aggiorna il contatore nel pannello
+  openSettings();
   toast('Preferiti cancellati');
 };
 
-// Su iOS la tastiera può coprire il campo appena toccato: lo riporto in vista
-document.querySelectorAll('.panel input, .panel textarea').forEach(inp => {
+document.querySelectorAll('.panel input, .panel textarea, #devPwInput').forEach(inp => {
   inp.addEventListener('focus', () => {
     setTimeout(() => inp.scrollIntoView({ block:'center', behavior:'smooth' }), 300);
   });
@@ -1930,7 +2112,7 @@ if (saved && Array.isArray(saved.lockers) && saved.lockers.length){
   renderMarkers();
   $('subtitle').textContent = `${lockers.length.toLocaleString('it-IT')} locker · ${saved.label || 'dati salvati'}`;
 }
-load(ROME_BBOX, 'Roma e provincia');
+load(HOME_BBOX, 'Roma e provincia');
 </script>
 </body>
 </html>
