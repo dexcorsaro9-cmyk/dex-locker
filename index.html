@@ -145,6 +145,21 @@
   .chip.fav.on{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
   .chip.fav.on .n{color:var(--accent-ink);opacity:.7}
 
+  #quickFilters{
+    display:flex;gap:7px;overflow-x:auto;padding:0 16px 12px;flex-shrink:0;
+    scrollbar-width:none;-webkit-overflow-scrolling:touch;
+  }
+  #quickFilters::-webkit-scrollbar{display:none}
+  .qf-chip{
+    display:flex;align-items:center;gap:5px;white-space:nowrap;
+    padding:7px 12px;border-radius:999px;cursor:pointer;
+    border:1.5px solid var(--line);background:var(--chip-bg);color:var(--ink-2);
+    font-size:12px;font-weight:700;
+  }
+  .qf-chip:active{transform:scale(.95)}
+  .qf-chip.on{background:var(--ink);border-color:var(--ink);color:var(--bg)}
+  .qf-chip.route{border-color:var(--accent);color:var(--accent-ink);background:color-mix(in srgb, var(--accent) 16%, var(--surface));font-weight:800}
+
   /* ---------- Mappa ---------- */
   #mapwrap{position:relative;flex:1;min-height:0}
   #map{position:absolute;inset:0;background:var(--bg)}
@@ -357,6 +372,16 @@
     padding:13px;margin-bottom:12px;
   }
   #cm-form.show{display:block}
+  .cm-type-row{display:flex;gap:7px;margin-bottom:10px}
+  .cm-type-chip{
+    flex:1;padding:9px;border-radius:10px;cursor:pointer;
+    border:1.5px solid var(--line);background:var(--surface);color:var(--ink-2);
+    font-family:inherit;font-size:12px;font-weight:800;
+  }
+  .cm-type-chip.on{background:var(--ink);border-color:var(--ink);color:var(--bg)}
+  .cm-howto-tag{font-size:10px;font-weight:800;color:#fff;background:#2E7CF6;
+    padding:2px 8px;border-radius:999px;display:inline-block;margin-bottom:5px}
+
   #cm-text{
     width:100%;min-height:70px;border-radius:10px;border:1.5px solid var(--line);
     background:var(--surface);color:var(--ink);padding:10px 12px;resize:vertical;
@@ -504,6 +529,27 @@
   #addNoShare.show{display:block}
   #addNoShare b{color:var(--ink)}
 
+  /* Giro Spedizioni */
+  .route-hint{font-size:13px;color:var(--ink-2);font-weight:500;line-height:1.5;margin-bottom:14px}
+  #routeBrands{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px}
+  #routeResults{margin-top:16px}
+  .route-stop{
+    display:flex;gap:12px;align-items:center;padding:12px 2px;border-bottom:1px solid var(--line);
+  }
+  .route-stop:last-child{border-bottom:none}
+  .route-num{
+    width:26px;height:26px;border-radius:50%;background:var(--ink);color:var(--bg);
+    display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:800;flex-shrink:0;
+  }
+  .route-main{flex:1;min-width:0}
+  .route-name{font-size:14px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .route-addr{font-size:12px;color:var(--ink-2);font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .route-summary{
+    font-size:13px;font-weight:700;color:var(--ink);text-align:center;
+    padding:12px;background:var(--bg);border-radius:12px;margin-bottom:12px;
+  }
+  .route-empty{font-size:13px;color:var(--ink-2);font-weight:500;text-align:center;padding:16px 0}
+
   /* Password sviluppatore */
   #devPwBackdrop{
     position:fixed;inset:0;z-index:2000;background:rgba(10,12,18,.5);
@@ -588,6 +634,12 @@
 </div>
 
 <div id="chips" role="group" aria-label="Filtra per corriere"></div>
+<div id="quickFilters" role="group" aria-label="Filtri rapidi">
+  <button class="qf-chip" data-f="open">🕐 Aperto ora</button>
+  <button class="qf-chip" data-f="h24">🌙 H24</button>
+  <button class="qf-chip" data-f="covered">☂️ Al coperto</button>
+  <button class="qf-chip route" id="btnRoute">🧭 Giro spedizioni</button>
+</div>
 
 <div id="mapwrap">
   <div id="map"></div>
@@ -660,6 +712,10 @@
   </button>
 
   <div id="cm-form">
+    <div class="cm-type-row">
+      <button class="cm-type-chip on" id="cm-type-generale" data-t="commento">💬 Generale</button>
+      <button class="cm-type-chip" id="cm-type-howto" data-t="indicazioni">🧭 Come trovarlo</button>
+    </div>
     <textarea id="cm-text" placeholder="Com'è la situazione? Es. &quot;funzionante&quot;, &quot;pieno da giorni&quot;, &quot;posizione comoda&quot;…" maxlength="300"></textarea>
     <input id="cm-name" type="text" placeholder="Il tuo nome (facoltativo)" maxlength="40" autocomplete="off">
     <div class="cm-photo-row">
@@ -780,9 +836,23 @@
     <label for="add-addr">Indirizzo</label>
     <input id="add-addr" type="text" placeholder="Via, numero civico, città">
   </div>
+  <div class="add-field">
+    <label for="add-howto">🧭 Come trovarlo (facoltativo)</label>
+    <input id="add-howto" type="text" placeholder="Es. Dietro il benzinaio, scendi le scale a destra…">
+  </div>
   <div id="addCoords"></div>
   <button id="addSubmit">Pubblica locker</button>
   <div id="addNoShare">📍 Verrà salvato <b>solo sul tuo telefono</b>: nessun registro pubblico Supabase configurato. Vai in ⚙️ Impostazioni per collegarlo (guida-supabase.md).</div>
+</div>
+
+<!-- Giro Spedizioni: trova il cluster di locker più vicini tra loro per i brand scelti -->
+<div id="routePanel" class="panel" role="dialog" aria-modal="true">
+  <div class="grab"></div>
+  <div id="setTitle">🧭 Giro spedizioni</div>
+  <p class="route-hint">Scegli 2 o 3 corrieri: trovo la zona dove i loro locker sono più vicini tra loro, per farti un solo giro.</p>
+  <div id="routeBrands"></div>
+  <button class="set-btn primary" id="routeFind">Trova il percorso ideale</button>
+  <div id="routeResults"></div>
 </div>
 
 <!-- Password sviluppatore (sostituisce prompt(), non supportato nelle app aggiunte alla Home su iOS) -->
@@ -805,7 +875,7 @@
    Geocoding: Nominatim (OpenStreetMap)
    ============================================================ */
 
-const APP_VERSION = '5.1';
+const APP_VERSION = '6.0';
 const HOME_BBOX = '41.40,11.73,42.30,13.30';   // vista iniziale: Roma e provincia
 let currentBBox = HOME_BBOX;                       // area effettivamente caricata in questo momento
 
@@ -1146,7 +1216,8 @@ async function fetchSupabaseApproved(bbox){
       community: true,
       tags: {
         name: row.nome || '', 'addr:street': row.via || '',
-        'addr:city': row.citta || '', opening_hours: row.orari || ''
+        'addr:city': row.citta || '', opening_hours: row.orari || '',
+        note: row.note || ''
       }
     }));
   }finally{ clearTimeout(timer); }
@@ -1252,9 +1323,10 @@ function renderComment(c, pending){
   const time = pending ? 'in attesa' : timeAgo(c.created_at);
   const photo = c.foto_url ? `<img class="cm-photo" src="${c.foto_url}" alt="Foto del locker" onclick="window.open('${c.foto_url}','_blank')">` : '';
   const tag = pending ? '<span class="cm-pending-tag">In attesa di approvazione</span>' : '';
+  const howtoTag = c.tipo === 'indicazioni' ? '<span class="cm-howto-tag">🧭 Come trovarlo</span>' : '';
   const testoHtml = c.testo ? `<div class="cm-text">${String(c.testo).replace(/</g,'&lt;')}</div>` : '';
   return `<div class="cm-item${pending ? ' pending' : ''}">
-    ${tag}
+    ${tag}${howtoTag}
     <div class="cm-head"><span class="cm-author">${author}</span><span class="cm-time">${time}</span></div>
     ${testoHtml}
     ${photo}
@@ -1276,8 +1348,21 @@ async function loadComments(lockerId){
   }
 }
 
+let cmType = 'commento';
+function setCmType(t){
+  cmType = t;
+  $('cm-type-generale').classList.toggle('on', t === 'commento');
+  $('cm-type-howto').classList.toggle('on', t === 'indicazioni');
+  $('cm-text').placeholder = t === 'indicazioni'
+    ? 'Es. "Superato il cancello verde, scendi la rampa a destra, è dietro le scale"…'
+    : 'Com\'è la situazione? Es. "funzionante", "pieno da giorni", "posizione comoda"…';
+}
+$('cm-type-generale').onclick = () => setCmType('commento');
+$('cm-type-howto').onclick = () => setCmType('indicazioni');
+
 function resetCommentForm(){
   $('cm-form').classList.remove('show');
+  setCmType('commento');
   $('cm-text').value = '';
   $('cm-name').value = lsGet(CM_NAME_KEY) || '';
   $('cm-photo-input').value = '';
@@ -1310,7 +1395,7 @@ $('cm-send').onclick = async () => {
   try{
     let foto_url = null;
     if (file) foto_url = await uploadPhoto(file);
-    const row = { locker_id: currentLocker.id, autore, testo, foto_url };
+    const row = { locker_id: currentLocker.id, autore, testo, foto_url, tipo: cmType };
     await submitToSupabase(row, 'comments');
     saveMyComment({ ...row, created_at: new Date().toISOString() });
     toast('Commento inviato: sarà visibile a tutti dopo l\'approvazione ✅', 3500);
@@ -1418,6 +1503,110 @@ function shareLocker(lk){
 }
 $('sh-share').onclick = () => { if (currentLocker) shareLocker(currentLocker); };
 
+// ----- Giro Spedizioni -----
+// Trova, tra i locker già caricati, il punto di partenza (per il primo brand
+// scelto) che minimizza la distanza totale dai locker più vicini degli altri
+// brand scelti: un unico giro invece di spostamenti separati.
+let routeSelected = new Set();
+
+function renderRouteBrands(){
+  const box = $('routeBrands');
+  box.innerHTML = '';
+  for (const [key, b] of Object.entries(BRANDS)){
+    if (key === 'altro') continue;
+    const c = document.createElement('button');
+    c.className = 'ab-chip' + (routeSelected.has(key) ? ' sel' : '');
+    c.innerHTML = `<span class="dot" style="background:${b.color}"></span>${b.name}`;
+    c.onclick = () => {
+      routeSelected.has(key) ? routeSelected.delete(key) : routeSelected.add(key);
+      if (routeSelected.size > 3){ const first = [...routeSelected][0]; routeSelected.delete(first); }
+      renderRouteBrands();
+    };
+    box.appendChild(c);
+  }
+}
+
+function findBestCluster(brandKeys){
+  const groups = brandKeys.map(k => lockers.filter(l => l.brand === k));
+  if (groups.some(g => g.length === 0)) return null;   // manca un brand nella zona caricata
+
+  let best = null;
+  for (const anchor of groups[0]){
+    let total = 0;
+    const picks = [anchor];
+    for (let i = 1; i < groups.length; i++){
+      let nearest = null, nd = Infinity;
+      for (const cand of groups[i]){
+        const d = haversine(anchor, cand);
+        if (d < nd){ nd = d; nearest = cand; }
+      }
+      total += nd;
+      picks.push(nearest);
+    }
+    if (!best || total < best.total) best = { total, picks };
+  }
+  return best;
+}
+
+function buildMultiStopUrl(picks){
+  const dest = picks[picks.length - 1];
+  const waypoints = picks.slice(0, -1).map(p => `${p.lat},${p.lon}`).join('|');
+  let url = `https://www.google.com/maps/dir/?api=1&destination=${dest.lat},${dest.lon}&travelmode=driving`;
+  if (waypoints) url += `&waypoints=${encodeURIComponent(waypoints)}`;
+  return url;
+}
+
+function openRoutePanel(){
+  renderRouteBrands();
+  $('routeResults').innerHTML = '';
+  closePanels();
+  $('routePanel').classList.add('show');
+  $('backdrop').classList.add('show');
+}
+$('btnRoute').onclick = openRoutePanel;
+
+$('routeFind').onclick = () => {
+  if (routeSelected.size < 2){ toast('Scegli almeno 2 corrieri'); return; }
+  if (!lockers.length){ toast('Nessun dato ancora: attendi il caricamento'); return; }
+
+  const brandKeys = [...routeSelected];
+  const best = findBestCluster(brandKeys);
+  const box = $('routeResults');
+
+  if (!best){
+    box.innerHTML = `<div class="route-empty">Non ho trovato tutti i corriere scelti nell'area caricata. Prova "Cerca in quest'area" su una zona più ampia, o scegli altri brand.</div>`;
+    return;
+  }
+
+  const stops = best.picks.map((p, i) => {
+    const b = BRANDS[p.brand];
+    const name = p.tags.name || p.tags.ref || ('Locker ' + b.name);
+    const addr = formatAddress(p.tags) || b.name;
+    return `<div class="route-stop" data-i="${i}">
+      <span class="route-num" style="background:${b.color};color:${b.text}">${i+1}</span>
+      <div class="route-main">
+        <div class="route-name">${name}</div>
+        <div class="route-addr">${b.name} · ${addr}</div>
+      </div>
+    </div>`;
+  }).join('');
+
+  box.innerHTML = `
+    <div class="route-summary">📏 Circa ${fmtDist(best.total)} in totale tra le tappe</div>
+    ${stops}
+    <a class="sh-btn primary" style="width:100%;margin-top:14px;box-sizing:border-box" target="_blank" rel="noopener" href="${buildMultiStopUrl(best.picks)}">
+      🚗 Avvia navigazione con tutte le tappe
+    </a>`;
+
+  box.querySelectorAll('.route-stop').forEach(el => {
+    el.onclick = () => {
+      const p = best.picks[+el.dataset.i];
+      map.setView([p.lat, p.lon], 17);
+      openSheet(p);
+    };
+  });
+};
+
 function renderAddBrands(){
   const box = $('addBrands');
   box.innerHTML = '';
@@ -1434,6 +1623,7 @@ function renderAddBrands(){
 function openAddForm(){
   $('add-name').value = '';
   $('add-addr').value = '';
+  $('add-howto').value = '';
   renderAddBrands();
   const c = map.getCenter();
   $('addCoords').textContent = `📍 ${c.lat.toFixed(5)}, ${c.lng.toFixed(5)}`;
@@ -1465,6 +1655,7 @@ $('addSubmit').onclick = async () => {
   const c = map.getCenter();
   const name = $('add-name').value.trim();
   const addr = $('add-addr').value.trim();
+  const howto = $('add-howto').value.trim();
   if (!name){ toast('Aggiungi almeno un nome per il punto'); return; }
 
   const btn = $('addSubmit');
@@ -1474,7 +1665,7 @@ $('addSubmit').onclick = async () => {
     id: 'mine/' + Date.now(),
     lat: c.lat, lon: c.lng,
     brand: addSelectedBrand,
-    tags: { name, 'addr:street': addr, 'addr:city':'' }
+    tags: { name, 'addr:street': addr, 'addr:city':'', note: howto }
   };
 
   if (sbConfig()){
@@ -1482,7 +1673,7 @@ $('addSubmit').onclick = async () => {
       await submitToSupabase({
         brand: BRANDS[addSelectedBrand].name,
         nome: name, via: addr, citta: '',
-        lat: c.lat, lon: c.lng, orari: ''
+        lat: c.lat, lon: c.lng, orari: '', note: howto
       });
       const mine = loadLocalAdded(); mine.push({ ...point, custom:true, pending:true }); saveLocalAdded(mine);
       toast('Proposta inviata: sarà visibile a tutti dopo l\'approvazione ✅', 3800);
@@ -1574,8 +1765,61 @@ function makeIcon(brandKey){
 }
 const icons = {}; Object.keys(BRANDS).forEach(k => icons[k] = makeIcon(k));
 
+// ----- Filtri smart -----
+let smartFilters = { open:false, h24:false, covered:false };
+
+// Parser semplificato del formato orari OpenStreetMap (es. "Mo-Fr 08:00-20:00; Sa 09:00-13:00").
+// Copre i casi più comuni (giorni singoli/intervalli, più fasce orarie, orari
+// che attraversano la mezzanotte); torna null se il formato non è riconoscibile.
+function isOpenNow(oh){
+  if (!oh) return null;
+  oh = oh.trim();
+  if (oh === '24/7') return true;
+  const dayOrder = ['Mo','Tu','We','Th','Fr','Sa','Su'];
+  const now = new Date();
+  const today = dayOrder[(now.getDay() + 6) % 7];   // getDay(): 0=Domenica → riallineo su Lun-Dom
+  const nowMin = now.getHours() * 60 + now.getMinutes();
+
+  let anyParsed = false, matched = false;
+  for (const seg of oh.split(';').map(s => s.trim()).filter(Boolean)){
+    const m = seg.match(/^([A-Za-z,\-\s]+)?\s*((?:\d{2}:\d{2}-\d{2}:\d{2}(?:,\s*)?)+)$/);
+    if (!m) continue;
+    anyParsed = true;
+    const dayPart = (m[1] || '').trim();
+    let daysActive = dayOrder;
+    if (dayPart){
+      daysActive = [];
+      for (const p of dayPart.split(',').map(s => s.trim()).filter(Boolean)){
+        if (p.includes('-')){
+          const [a, b] = p.split('-').map(s => s.trim());
+          const ia = dayOrder.indexOf(a), ib = dayOrder.indexOf(b);
+          if (ia === -1 || ib === -1) continue;
+          if (ia <= ib) for (let i = ia; i <= ib; i++) daysActive.push(dayOrder[i]);
+          else { for (let i = ia; i < 7; i++) daysActive.push(dayOrder[i]); for (let i = 0; i <= ib; i++) daysActive.push(dayOrder[i]); }
+        } else if (dayOrder.includes(p)) daysActive.push(p);
+      }
+    }
+    if (!daysActive.includes(today)) continue;
+    for (const r of m[2].split(',').map(s => s.trim()).filter(Boolean)){
+      const rm = r.match(/^(\d{2}):(\d{2})-(\d{2}):(\d{2})$/);
+      if (!rm) continue;
+      const start = (+rm[1]) * 60 + (+rm[2]), end = (+rm[3]) * 60 + (+rm[4]);
+      if (end <= start){ if (nowMin >= start || nowMin < end) matched = true; }
+      else if (nowMin >= start && nowMin < end) matched = true;
+    }
+  }
+  return anyParsed ? matched : null;
+}
+
 function visibleLockers(){
-  return lockers.filter(l => active.has(l.brand) && (!favOnly || favs.has(l.id)));
+  return lockers.filter(l => {
+    if (!active.has(l.brand)) return false;
+    if (favOnly && !favs.has(l.id)) return false;
+    if (smartFilters.h24 && (l.tags.opening_hours || '').trim() !== '24/7') return false;
+    if (smartFilters.covered && !(l.tags.covered === 'yes' || l.tags.indoor === 'yes')) return false;
+    if (smartFilters.open && isOpenNow(l.tags.opening_hours) !== true) return false;
+    return true;
+  });
 }
 
 function renderMarkers(){
@@ -1728,10 +1972,11 @@ function closePanels(){
   $('listPanel').classList.remove('show');
   $('settingsPanel').classList.remove('show');
   $('addPanel').classList.remove('show');
+  $('routePanel').classList.remove('show');
   $('backdrop').classList.remove('show');
 }
 $('backdrop').onclick = closePanels;
-for (const pid of ['sheet','listPanel','settingsPanel','addPanel']){
+for (const pid of ['sheet','listPanel','settingsPanel','addPanel','routePanel']){
   let touchY = null;
   const el = $(pid);
   el.addEventListener('touchstart', e => touchY = e.touches[0].clientY, {passive:true});
@@ -1799,6 +2044,16 @@ $('lref').querySelectorAll('.lref-chip').forEach(ch => {
     if (m === 'work' && !places.work){ toast('Imposta prima Lavoro in ⚙️ Impostazioni'); return; }
     listMode = m;
     openList();
+  };
+});
+
+document.querySelectorAll('.qf-chip[data-f]').forEach(ch => {
+  ch.onclick = () => {
+    const f = ch.dataset.f;
+    smartFilters[f] = !smartFilters[f];
+    ch.classList.toggle('on', smartFilters[f]);
+    renderMarkers();
+    if ($('listPanel').classList.contains('show')) openList();
   };
 });
 
