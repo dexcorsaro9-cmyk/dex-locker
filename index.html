@@ -27,7 +27,7 @@
     --danger:#D22730;
     --shadow:0 8px 28px rgba(20,22,30,.14);
     --chip-bg:#FFFFFF;
-    --tabbar-h:62px;
+    --tabbar-h:calc(54px + env(safe-area-inset-bottom));
   }
   @media (prefers-color-scheme: dark){
     :root{
@@ -41,7 +41,7 @@
     }
   }
   *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
-  html,body{height:100%;-webkit-text-size-adjust:100%}
+  html,body{height:100%;-webkit-text-size-adjust:100%;background:var(--bg)}
   body{
     font-family:'Archivo',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
     background:var(--bg);color:var(--ink);
@@ -283,7 +283,7 @@
   .map-ctrl-btn.spin svg{animation:rot 1s linear infinite}
 
   #btnAdd{
-    position:absolute;bottom:calc(20px + env(safe-area-inset-bottom) + var(--tabbar-h));right:14px;z-index:800;
+    position:absolute;bottom:calc(20px + var(--tabbar-h));right:14px;z-index:800;
     width:56px;height:56px;border-radius:50%;border:none;cursor:pointer;
     background:linear-gradient(165deg, color-mix(in srgb, var(--accent) 100%, white 22%), var(--accent) 55%, color-mix(in srgb, var(--accent) 100%, black 10%));
     color:var(--accent-ink);
@@ -297,7 +297,7 @@
 
   #fabMenu{
     position:absolute;right:14px;z-index:799;
-    bottom:calc(20px + env(safe-area-inset-bottom) + var(--tabbar-h) + 70px);
+    bottom:calc(20px + var(--tabbar-h) + 70px);
     display:flex;flex-direction:column;align-items:flex-end;gap:12px;
   }
   .fab-opt{
@@ -346,7 +346,7 @@
 
   #placeBar{
     position:absolute;left:50%;transform:translateX(-50%);z-index:800;
-    bottom:calc(20px + env(safe-area-inset-bottom) + var(--tabbar-h));
+    bottom:calc(20px + var(--tabbar-h));
     display:none;align-items:center;gap:22px;
   }
   #placeBar.show{display:flex}
@@ -382,7 +382,7 @@
   #loader p{font-size:13px;font-weight:600;color:var(--ink-2)}
 
   #toast{
-    position:absolute;bottom:calc(80px + env(safe-area-inset-bottom) + var(--tabbar-h));left:50%;
+    position:absolute;bottom:calc(80px + var(--tabbar-h));left:50%;
     transform:translateX(-50%) translateY(20px);z-index:950;
     background:var(--ink);color:var(--bg);
     padding:11px 18px;border-radius:12px;font-size:13px;font-weight:600;
@@ -402,6 +402,10 @@
     border-top:1px solid var(--line);
     padding:8px 6px calc(6px + env(safe-area-inset-bottom));
     box-shadow:0 -4px 16px rgba(0,0,0,.06);
+  }
+  #tabbar::after{
+    content:'';position:absolute;left:0;right:0;top:100%;height:50px;
+    background:inherit;-webkit-backdrop-filter:inherit;backdrop-filter:inherit;
   }
   .tab-item{
     flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;
@@ -815,6 +819,64 @@
   }
   .wl-empty{font-size:13px;color:var(--ink-2);font-weight:500;text-align:center;padding:20px 0}
 
+  /* Badge rosso "Sbrigati" sulla tab Pacchi */
+  .tab-icon-wrap{position:relative;display:inline-flex}
+  .tab-badge{
+    display:none;position:absolute;top:-3px;right:-4px;
+    width:9px;height:9px;border-radius:50%;background:var(--danger);
+    border:2px solid var(--surface);
+    box-shadow:0 0 0 2px color-mix(in srgb, var(--danger) 35%, transparent);
+    animation:badgePulse 1.6s ease-in-out infinite;
+  }
+  .tab-badge.show{display:block}
+  @keyframes badgePulse{0%,100%{transform:scale(1)}50%{transform:scale(1.25)}}
+
+  /* Scadenza ritiro nel portafoglio pacchi */
+  .wl-deadline{margin-top:10px}
+  .wl-deadline-row{display:flex;justify-content:space-between;align-items:center;margin-bottom:6px}
+  .wl-deadline-label{font-size:11.5px;font-weight:700;color:var(--ink-2)}
+  .wl-deadline-label.urgent{color:var(--danger);font-weight:800}
+  .wl-days{display:flex;gap:5px}
+  .wl-day-btn{
+    padding:3px 9px;border-radius:999px;border:1.5px solid var(--line);background:var(--surface);
+    color:var(--ink-2);font-family:inherit;font-size:10.5px;font-weight:800;cursor:pointer;
+  }
+  .wl-day-btn.sel{background:var(--ink);border-color:var(--ink);color:var(--bg)}
+  .wl-bar-track{width:100%;height:6px;border-radius:999px;background:var(--line);overflow:hidden}
+  .wl-bar-fill{height:100%;border-radius:999px;background:linear-gradient(90deg, #1FAE5A, var(--accent));transition:width .3s ease}
+  .wl-bar-fill.urgent{background:linear-gradient(90deg, var(--danger), #FF6B57)}
+
+  .wl-actions{display:flex;gap:8px;margin-top:10px}
+  .wl-complete{
+    flex:1;padding:10px;border-radius:10px;border:none;cursor:pointer;
+    background:linear-gradient(165deg, color-mix(in srgb, #1FAE5A 100%, white 20%), #1FAE5A);
+    color:#fff;font-family:inherit;font-size:12px;font-weight:800;
+    box-shadow:0 3px 0 color-mix(in srgb, #1FAE5A 100%, black 25%);
+  }
+  .wl-complete:active{transform:translateY(2px);box-shadow:0 1px 0 color-mix(in srgb, #1FAE5A 100%, black 25%)}
+  .wl-remove-small{
+    width:38px;flex-shrink:0;border-radius:10px;border:1.5px solid var(--line);background:var(--surface);
+    color:var(--ink-2);cursor:pointer;font-size:14px;
+  }
+
+  /* Sezione archivio */
+  .wl-archive-toggle{
+    width:100%;text-align:center;padding:12px;border-radius:14px;cursor:pointer;
+    border:1.5px dashed var(--line);background:transparent;color:var(--ink-2);
+    font-family:inherit;font-size:12.5px;font-weight:700;margin-top:6px;
+  }
+  .wl-archive-list{display:none;margin-top:10px}
+  .wl-archive-list.show{display:block}
+  .wl-arch-item{
+    display:flex;align-items:center;gap:10px;padding:9px 4px;border-bottom:1px solid var(--line);
+    opacity:.7;
+  }
+  .wl-arch-item:last-child{border-bottom:none}
+  .wl-arch-main{flex:1;min-width:0}
+  .wl-arch-name{font-size:13px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .wl-arch-date{font-size:11px;color:var(--ink-2);font-weight:500}
+  .wl-arch-del{background:none;border:none;color:var(--ink-2);font-size:14px;cursor:pointer;padding:4px 8px}
+
   /* Password sviluppatore */
   #devPwBackdrop{
     position:fixed;inset:0;z-index:2000;background:rgba(10,12,18,.5);
@@ -948,7 +1010,10 @@
     <span>Vicini</span>
   </button>
   <button class="tab-item" id="btnWallet" data-tab="wallet">
-    <svg viewBox="0 0 24 24"><path d="M21 8l-9-5-9 5 9 5 9-5z"/><path d="M3 8v8l9 5 9-5V8"/><path d="M12 13v8"/></svg>
+    <span class="tab-icon-wrap">
+      <svg viewBox="0 0 24 24"><path d="M21 8l-9-5-9 5 9 5 9-5z"/><path d="M3 8v8l9 5 9-5V8"/><path d="M12 13v8"/></svg>
+      <span id="walletBadge" class="tab-badge"></span>
+    </span>
     <span>Pacchi</span>
   </button>
   <button class="tab-item" id="btnSettings" data-tab="settings">
@@ -994,10 +1059,20 @@
       Indicazioni
     </a>
   </div>
-  <button class="sh-btn secondary" id="sh-share" style="width:100%;margin-top:10px">
-    <svg viewBox="0 0 24 24"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><path d="M8.6 13.5l6.8 4M15.4 6.5l-6.8 4"/></svg>
-    Condividi questo locker
-  </button>
+  <a class="sh-btn secondary" id="sh-streetview" target="_blank" rel="noopener" style="width:100%;margin-top:10px">
+    <svg viewBox="0 0 24 24"><path d="M2 12h20"/><circle cx="12" cy="12" r="9"/><path d="M12 3a15 15 0 0 1 0 18M12 3a15 15 0 0 0 0 18"/></svg>
+    Guardati intorno (Street View)
+  </a>
+  <div class="sh-btns" style="margin-top:10px">
+    <button class="sh-btn secondary" id="sh-share">
+      <svg viewBox="0 0 24 24"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><path d="M8.6 13.5l6.8 4M15.4 6.5l-6.8 4"/></svg>
+      Condividi
+    </button>
+    <button class="sh-btn secondary" id="sh-delegate">
+      <svg viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+      Delega il ritiro
+    </button>
+  </div>
   <button class="sh-btn secondary" id="sh-wallet" style="width:100%;margin-top:10px">
     <svg viewBox="0 0 24 24"><path d="M21 8l-9-5-9 5 9 5 9-5z"/><path d="M3 8v8l9 5 9-5V8"/></svg>
     Aggiungi ai miei pacchi
@@ -1203,7 +1278,7 @@
    Geocoding: Nominatim (OpenStreetMap)
    ============================================================ */
 
-const APP_VERSION = '8.4';
+const APP_VERSION = '9.0';
 const HOME_BBOX = '41.40,11.73,42.30,13.30';   // vista iniziale: Roma e provincia
 let currentBBox = HOME_BBOX;                       // area effettivamente caricata in questo momento
 
@@ -1305,6 +1380,20 @@ function haversine(a, b){
 }
 function fmtDist(m){
   return m < 1000 ? Math.round(m) + ' m' : (m/1000).toFixed(1).replace('.', ',') + ' km';
+}
+// Il cervello ragiona in tempo, non in metri: sotto i 2km mostriamo minuti a piedi
+// (80 m/min, media di camminata), oltre passiamo a una stima in auto.
+function fmtWalk(m){
+  if (m <= 2000){
+    const min = Math.max(1, Math.round(m / 80));
+    return `🚶 ${min} min a piedi`;
+  }
+  const min = Math.max(1, Math.round(m / 300));   // ~18 km/h, stima urbana approssimativa
+  return `🚗 ${min} min in auto`;
+}
+function fmtWalkShort(m){
+  if (m <= 2000) return `🚶 ${Math.max(1, Math.round(m / 80))} min`;
+  return `🚗 ${Math.max(1, Math.round(m / 300))} min`;
 }
 function refPoint(){
   if (userPos)   return { ...userPos, label:'dalla tua posizione' };
@@ -1873,6 +1962,23 @@ function shareLocker(lk){
 }
 $('sh-share').onclick = () => { if (currentLocker) shareLocker(currentLocker); };
 
+// Delega Rapida: messaggio pronto per chiedere a qualcuno di ritirare al posto tuo
+function delegateLocker(lk){
+  const t = lk.tags;
+  const b = BRANDS[lk.brand];
+  const name = t.name || t.ref || ('Locker ' + b.name);
+  const addr = formatAddress(t);
+  const mapsUrl = `https://www.google.com/maps/dir/?api=1&destination=${lk.lat},${lk.lon}`;
+  const text = `Ciao! Non riesco a passare al locker oggi, potresti ritirare tu questo pacco per me? 🙏\n\n📦 ${name}${addr ? ' — ' + addr : ''}\n📍 ${mapsUrl}\n\nIl codice per aprire lo sportello è: _______`;
+
+  if (navigator.share){
+    navigator.share({ text }).catch(() => {});
+  } else {
+    window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, '_blank');
+  }
+}
+$('sh-delegate').onclick = () => { if (currentLocker) delegateLocker(currentLocker); };
+
 // ----- I miei pacchi (versione manuale: nessun tracking automatico) -----
 // L'utente sceglie a mano il locker di destinazione; il codice di tracciamento
 // resta solo un promemoria testuale, non viene letto/interpretato dall'app.
@@ -1882,9 +1988,9 @@ let walletIds = new Set();
 function loadWallet(){ try{ return JSON.parse(lsGet(WALLET_KEY)) || []; }catch(e){ return []; } }
 function saveWallet(list){
   lsSet(WALLET_KEY, JSON.stringify(list));
-  walletIds = new Set(list.map(w => w.lockerId));
+  walletIds = new Set(list.filter(w => !w.completed).map(w => w.lockerId));
 }
-walletIds = new Set(loadWallet().map(w => w.lockerId));
+walletIds = new Set(loadWallet().filter(w => !w.completed).map(w => w.lockerId));
 
 function addToWallet(lk){
   const list = loadWallet();
@@ -1896,20 +2002,41 @@ function addToWallet(lk){
     name: lk.tags.name || lk.tags.ref || ('Locker ' + b.name),
     addr: formatAddress(lk.tags),
     lat: lk.lat, lon: lk.lon,
-    tracking: '', note: '', addedAt: Date.now()
+    tracking: '', note: '', addedAt: Date.now(),
+    completed: false, deadlineDays: 3
   });
   saveWallet(list);
   renderMarkers();
+  refreshWalletBadge();
 }
 function removeFromWallet(lockerId){
   saveWallet(loadWallet().filter(w => w.lockerId !== lockerId));
   renderMarkers();
+  refreshWalletBadge();
 }
 function updateWalletField(lockerId, field, value){
   const list = loadWallet();
   const it = list.find(w => w.lockerId === lockerId);
   if (it){ it[field] = value; saveWallet(list); }
 }
+function completeWalletItem(lockerId){
+  const list = loadWallet();
+  const it = list.find(w => w.lockerId === lockerId);
+  if (it){ it.completed = true; it.completedAt = Date.now(); saveWallet(list); }
+  renderMarkers();
+  refreshWalletBadge();
+}
+
+// Badge rosso "Sbrigati" sulla tab Pacchi: compare se c'è almeno un pacco attivo
+// non ancora completato e sono passate le 13:00 (un avviso anticipato rispetto
+// al cut-off delle 14:00 del countdown corriere).
+function refreshWalletBadge(){
+  const hasActive = loadWallet().some(w => !w.completed);
+  const pastWarningHour = new Date().getHours() >= 13;
+  const el = $('walletBadge');
+  if (el) el.classList.toggle('show', hasActive && pastWarningHour);
+}
+setInterval(refreshWalletBadge, 60000);
 
 function refreshWalletButton(){
   const inWallet = currentLocker && walletIds.has(currentLocker.id);
@@ -1925,17 +2052,37 @@ $('sh-wallet').onclick = () => {
   refreshWalletButton();
 };
 
+// Calcola quanto manca alla scadenza del ritiro (default 3 giorni, come InPost)
+function deadlineInfo(w){
+  const totalMs = (w.deadlineDays || 3) * 24 * 3600 * 1000;
+  const remainingMs = totalMs - (Date.now() - w.addedAt);
+  const pct = Math.max(0, Math.min(1, remainingMs / totalMs));
+  const remH = remainingMs / 3600000;
+  let label, urgent = false;
+  if (remainingMs <= 0){ label = '⚠️ Scaduto: potrebbe essere già tornato indietro'; urgent = true; }
+  else if (remH < 24){ label = `⚠️ Scade tra ${Math.max(1, Math.round(remH))} ore!`; urgent = true; }
+  else { label = `Scade tra ${Math.ceil(remH / 24)} giorni`; }
+  return { pct, label, urgent };
+}
+
 function renderWalletList(){
-  const list = loadWallet();
+  const all = loadWallet();
+  const active = all.filter(w => !w.completed);
+  const archived = all.filter(w => w.completed).sort((a,b) => (b.completedAt||0) - (a.completedAt||0));
   const box = $('walletList');
-  if (!list.length){
+
+  if (!active.length && !archived.length){
     box.innerHTML = '<div class="wl-empty">Nessun pacco in arrivo salvato.<br>Apri un locker sulla mappa e tocca "Aggiungi ai miei pacchi".</div>';
     return;
   }
+
   const ref = (userPos || places.home) ? (userPos || places.home) : null;
-  box.innerHTML = list.map(w => {
+
+  const activeHtml = active.length ? active.map(w => {
     const b = BRANDS[w.brand];
-    const dist = ref ? `<span class="wl-addr">📍 ${fmtDist(haversine(ref, w))}</span>` : '';
+    const dist = ref ? `<span class="wl-addr">📍 ${fmtWalk(haversine(ref, w))}</span>` : '';
+    const dl = deadlineInfo(w);
+    const days = [3, 5, 7].map(d => `<button class="wl-day-btn${(w.deadlineDays||3)===d?' sel':''}" data-day="${d}" data-id="${w.lockerId}">${d}gg</button>`).join('');
     return `<div class="wl-item" data-id="${w.lockerId}">
       <div class="wl-head">
         <span class="wl-dot" style="background:${b.color}"></span>
@@ -1943,26 +2090,74 @@ function renderWalletList(){
           <div class="wl-name">${w.name}</div>
           <div class="wl-addr">${w.addr || b.name}</div>
         </div>
-        <button class="wl-remove" data-remove="${w.lockerId}">✕</button>
+        <button class="wl-remove-small" data-remove="${w.lockerId}" title="Rimuovi senza archiviare">✕</button>
       </div>
       <div class="wl-fields">
         <input type="text" placeholder="Codice di tracciamento (facoltativo, solo promemoria)" value="${(w.tracking||'').replace(/"/g,'&quot;')}" data-field="tracking" data-id="${w.lockerId}">
         <input type="text" placeholder="Nota (es. cosa contiene)" value="${(w.note||'').replace(/"/g,'&quot;')}" data-field="note" data-id="${w.lockerId}">
       </div>
+      <div class="wl-deadline">
+        <div class="wl-deadline-row">
+          <span class="wl-deadline-label${dl.urgent?' urgent':''}">${dl.label}</span>
+          <div class="wl-days">${days}</div>
+        </div>
+        <div class="wl-bar-track"><div class="wl-bar-fill${dl.urgent?' urgent':''}" style="width:${Math.round(dl.pct*100)}%"></div></div>
+      </div>
       ${dist}
-      <button class="wl-go" data-go="${w.lockerId}">Apri sulla mappa e naviga</button>
+      <div class="wl-actions">
+        <button class="wl-complete" data-complete="${w.lockerId}">✓ Completato</button>
+        <button class="wl-go" data-go="${w.lockerId}" style="flex:1">Naviga</button>
+      </div>
     </div>`;
-  }).join('');
+  }).join('') : '<div class="wl-empty">Nessun pacco attivo al momento 🎉</div>';
+
+  const archiveHtml = archived.length ? archived.map(w => {
+    const b = BRANDS[w.brand];
+    const date = w.completedAt ? new Date(w.completedAt).toLocaleDateString('it-IT', { day:'2-digit', month:'short' }) : '';
+    return `<div class="wl-arch-item">
+      <span class="wl-dot" style="background:${b.color}"></span>
+      <div class="wl-arch-main">
+        <div class="wl-arch-name">${w.name}</div>
+        <div class="wl-arch-date">✓ Completato il ${date}</div>
+      </div>
+      <button class="wl-arch-del" data-archdel="${w.lockerId}">✕</button>
+    </div>`;
+  }).join('') : '<div class="wl-empty">Archivio vuoto</div>';
+
+  box.innerHTML = `
+    ${activeHtml}
+    <button class="wl-archive-toggle" id="wlArchiveToggle">📚 Archivio (${archived.length}) — tocca per aprire</button>
+    <div class="wl-archive-list" id="wlArchiveList">${archiveHtml}</div>
+  `;
 
   box.querySelectorAll('[data-remove]').forEach(el => {
     el.onclick = (e) => { e.stopPropagation(); removeFromWallet(el.dataset.remove); toast('Rimosso dai tuoi pacchi'); renderWalletList(); };
+  });
+  box.querySelectorAll('[data-complete]').forEach(el => {
+    el.onclick = (e) => {
+      e.stopPropagation();
+      completeWalletItem(el.dataset.complete);
+      toast('📚 Spostato nell\'archivio — bella spedizione! 🎉');
+      vibrate(20);
+      renderWalletList();
+    };
+  });
+  box.querySelectorAll('[data-archdel]').forEach(el => {
+    el.onclick = (e) => { e.stopPropagation(); removeFromWallet(el.dataset.archdel); renderWalletList(); };
+  });
+  box.querySelectorAll('[data-day]').forEach(el => {
+    el.onclick = (e) => {
+      e.stopPropagation();
+      updateWalletField(el.dataset.id, 'deadlineDays', +el.dataset.day);
+      renderWalletList();
+    };
   });
   box.querySelectorAll('[data-field]').forEach(el => {
     el.addEventListener('change', () => updateWalletField(el.dataset.id, el.dataset.field, el.value.trim()));
   });
   box.querySelectorAll('[data-go]').forEach(el => {
     el.onclick = () => {
-      const w = list.find(x => x.lockerId === el.dataset.go);
+      const w = all.find(x => x.lockerId === el.dataset.go);
       if (!w) return;
       map.setView([w.lat, w.lon], 17);
       const lk = lockers.find(l => l.id === w.lockerId);
@@ -1970,6 +2165,15 @@ function renderWalletList(){
       else closePanels();
     };
   });
+  const archToggle = $('wlArchiveToggle');
+  if (archToggle){
+    archToggle.onclick = () => {
+      const list = $('wlArchiveList');
+      const show = !list.classList.contains('show');
+      list.classList.toggle('show', show);
+      archToggle.textContent = show ? '📚 Archivio — tocca per chiudere' : `📚 Archivio (${archived.length}) — tocca per aprire`;
+    };
+  }
 }
 
 function openWalletPanel(){
@@ -2433,10 +2637,10 @@ function openSheet(lk){
   const dparts = [];
   if (userPos || searchPos){
     const ref = refPoint();
-    dparts.push(`📍 ${fmtDist(haversine(ref, lk))} ${ref.label}`);
+    dparts.push(`📍 ${fmtWalk(haversine(ref, lk))} ${ref.label}`);
   }
-  if (places.home) dparts.push(`🏠 ${fmtDist(haversine(places.home, lk))} da casa`);
-  if (places.work) dparts.push(`💼 ${fmtDist(haversine(places.work, lk))} dal lavoro`);
+  if (places.home) dparts.push(`🏠 ${fmtWalk(haversine(places.home, lk))} da casa`);
+  if (places.work) dparts.push(`💼 ${fmtWalk(haversine(places.work, lk))} dal lavoro`);
   if (dparts.length){
     distEl.innerHTML = dparts.join('<br>');
     distEl.classList.add('show');
@@ -2463,6 +2667,7 @@ function openSheet(lk){
 
   $('sh-google').href = `https://www.google.com/maps/dir/?api=1&destination=${lk.lat},${lk.lon}&travelmode=driving`;
   $('sh-apple').href  = `https://maps.apple.com/?daddr=${lk.lat},${lk.lon}`;
+  $('sh-streetview').href = `https://www.google.com/maps/@?api=1&map_action=pano&viewpoint=${lk.lat},${lk.lon}`;
 
   resetCommentForm();
   loadComments(lk.id);
@@ -2545,7 +2750,7 @@ function openList(){
         <div class="lp-name">${star}${name}</div>
         <div class="lp-addr">${addr}</div>
       </div>
-      <span class="lp-dist">${fmtDist(d)}</span>
+      <span class="lp-dist">${fmtWalkShort(d)}</span>
     </div>`;
   }).join('') : '<div class="lp-empty">Nessun locker con i filtri attuali</div>';
 
@@ -2905,6 +3110,7 @@ function hideSplashRespectingMinTime(){
 // ----- Avvio -----
 loadPlaces();
 renderPlaceMarkers();
+refreshWalletBadge();
 const saved = cache.get();
 let bootLoad;
 
