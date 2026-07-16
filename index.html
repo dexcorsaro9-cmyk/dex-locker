@@ -393,6 +393,21 @@
   #toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
 
   /* Barra di navigazione in basso */
+  /* Modalità Guida: pulsanti più grandi, comodi da toccare mentre si guida */
+  #driveModeBtn.on{
+    background:linear-gradient(165deg, color-mix(in srgb, var(--accent) 100%, white 20%), var(--accent) 55%, color-mix(in srgb, var(--accent) 100%, black 8%));
+    border-color:transparent;color:var(--accent-ink);
+    box-shadow:0 4px 0 color-mix(in srgb, var(--accent) 100%, black 25%), 0 6px 16px color-mix(in srgb, var(--accent) 55%, transparent);
+  }
+  body.driving-mode #btnAdd{width:68px;height:68px}
+  body.driving-mode #btnAdd svg{width:30px;height:30px}
+  body.driving-mode .map-ctrl-btn{width:52px;height:52px}
+  body.driving-mode .map-ctrl-btn svg{width:24px;height:24px}
+  body.driving-mode .tab-item{padding:10px 4px}
+  body.driving-mode .tab-item svg{width:29px;height:29px}
+  body.driving-mode .tab-item span{font-size:12.5px}
+  body.driving-mode #tabbar{padding-top:12px}
+
   #tabbar{
     position:fixed;left:0;right:0;bottom:0;z-index:900;
     display:flex;
@@ -562,6 +577,18 @@
   .cm-type-chip.on{background:var(--ink);border-color:var(--ink);color:var(--bg)}
   .cm-howto-tag{font-size:10px;font-weight:800;color:#fff;background:#2E7CF6;
     padding:2px 8px;border-radius:999px;display:inline-block;margin-bottom:5px}
+  .cm-safety-tag{font-size:10px;font-weight:800;color:#fff;background:#6B46C1;
+    padding:2px 8px;border-radius:999px;display:inline-block;margin-bottom:5px}
+
+  #cm-safety-tags{display:none;flex-direction:column;gap:8px;margin-bottom:8px}
+  #cm-safety-tags.show{display:flex}
+  .cm-safety-btn{
+    padding:12px;border-radius:10px;cursor:pointer;text-align:left;
+    border:1.5px solid var(--line);background:var(--surface);color:var(--ink);
+    font-family:inherit;font-size:14px;font-weight:700;
+    transition:transform .15s cubic-bezier(.34,1.56,.64,1);
+  }
+  .cm-safety-btn:active{transform:scale(.97);background:var(--bg)}
 
   #cm-text{
     width:100%;min-height:70px;border-radius:10px;border:1.5px solid var(--line);
@@ -622,6 +649,22 @@
     color:var(--ink-2);margin:18px 0 8px;
   }
   .set-section:first-of-type{margin-top:4px}
+
+  .karma-card{
+    display:flex;align-items:center;gap:14px;
+    background:linear-gradient(145deg, var(--bg), color-mix(in srgb, var(--accent) 8%, var(--bg)));
+    border:1.5px solid var(--line);border-radius:18px;padding:14px;margin-bottom:6px;
+  }
+  .karma-avatar{width:64px;height:64px;object-fit:contain;flex-shrink:0}
+  .karma-info{flex:1;min-width:0}
+  .karma-level{font-size:16px;font-weight:800;letter-spacing:-.01em}
+  .karma-count{font-size:12px;color:var(--ink-2);font-weight:600;margin:1px 0 8px}
+  .karma-bar-track{width:100%;height:7px;border-radius:999px;background:var(--line);overflow:hidden}
+  .karma-bar-fill{
+    height:100%;border-radius:999px;transition:width .4s cubic-bezier(.34,1.2,.64,1);
+    background:linear-gradient(90deg, color-mix(in srgb, var(--accent) 100%, white 20%), var(--accent));
+  }
+  .karma-next{font-size:10.5px;color:var(--ink-2);font-weight:600;margin-top:5px}
   .set-info{
     background:var(--bg);border:1.5px solid var(--line);border-radius:14px;
     padding:6px 14px;margin-bottom:6px;
@@ -877,6 +920,22 @@
   .wl-arch-date{font-size:11px;color:var(--ink-2);font-weight:500}
   .wl-arch-del{background:none;border:none;color:var(--ink-2);font-size:14px;cursor:pointer;padding:4px 8px}
 
+  .wl-icon-btn{
+    width:44px;flex-shrink:0;border-radius:10px;border:1.5px solid var(--line);
+    background:var(--surface);cursor:pointer;font-size:16px;
+    display:flex;align-items:center;justify-content:center;
+    transition:transform .15s cubic-bezier(.34,1.56,.64,1);
+  }
+  .wl-icon-btn:active{transform:scale(.9)}
+  .wl-icon-btn:disabled{opacity:.5}
+
+  .wl-proof-thumb{
+    width:100%;height:120px;border-radius:12px;overflow:hidden;margin-top:10px;
+    background:var(--line);cursor:pointer;
+  }
+  .wl-proof-thumb img{width:100%;height:100%;object-fit:cover;display:block}
+  .wl-proof-thumb.small{width:44px;height:44px;flex-shrink:0;margin-top:0;border-radius:9px}
+
   /* Password sviluppatore */
   #devPwBackdrop{
     position:fixed;inset:0;z-index:2000;background:rgba(10,12,18,.5);
@@ -1090,8 +1149,14 @@
     <div class="cm-type-row">
       <button class="cm-type-chip on" id="cm-type-generale" data-t="commento">💬 Generale</button>
       <button class="cm-type-chip" id="cm-type-howto" data-t="indicazioni">🧭 Come trovarlo</button>
+      <button class="cm-type-chip" id="cm-type-safety" data-t="sicurezza">🌙 Sicurezza</button>
     </div>
     <textarea id="cm-text" placeholder="Com'è la situazione? Es. &quot;funzionante&quot;, &quot;pieno da giorni&quot;, &quot;posizione comoda&quot;…" maxlength="300"></textarea>
+    <div id="cm-safety-tags">
+      <button class="cm-safety-btn" data-tag="💡 Ben illuminato">💡 Ben illuminato</button>
+      <button class="cm-safety-btn" data-tag="🔦 Zona buia">🔦 Zona buia</button>
+      <button class="cm-safety-btn" data-tag="🏪 C'è sempre gente">🏪 C'è sempre gente</button>
+    </div>
     <input id="cm-name" type="text" placeholder="Il tuo nome (facoltativo)" maxlength="40" autocomplete="off">
     <div class="cm-photo-row">
       <label id="cm-photo-label" for="cm-photo-input">
@@ -1134,6 +1199,16 @@
   <div class="grab"></div>
   <div id="setTitle">⚙️ Impostazioni</div>
 
+  <div class="karma-card">
+    <img id="karmaAvatar" class="karma-avatar" src="avatar-1-turista.png" alt="Il tuo livello">
+    <div class="karma-info">
+      <div class="karma-level" id="karmaLevelName">Turista</div>
+      <div class="karma-count" id="karmaCount">0 contributi</div>
+      <div class="karma-bar-track"><div class="karma-bar-fill" id="karmaBarFill" style="width:0%"></div></div>
+      <div class="karma-next" id="karmaNext"></div>
+    </div>
+  </div>
+
   <div class="set-section">Stato dell'app</div>
   <div class="set-info set-info-grid">
     <div class="set-info-row"><span>Versione</span><b id="set-version"></b></div>
@@ -1163,6 +1238,13 @@
     </div>
     <div class="set-hint" id="set-work-cur">Non impostato</div>
   </div>
+
+  <div class="set-section">Sul campo</div>
+  <button class="set-btn" id="driveModeBtn">
+    <svg viewBox="0 0 24 24"><path d="M5 17h14M5 17a2 2 0 0 1-2-2v-3l2-5a2 2 0 0 1 2-1h10a2 2 0 0 1 2 1l2 5v3a2 2 0 0 1-2 2M5 17a2 2 0 0 0 2 2h1a2 2 0 0 0 2-2M17 17a2 2 0 0 0 2 2h1a2 2 0 0 0 2-2"/></svg>
+    🚗 Modalità Guida: <span id="driveModeStatus">spenta</span>
+  </button>
+  <div class="set-hint">Impedisce allo schermo di spegnersi e ingrandisce i pulsanti — comoda durante il Giro Spedizioni col telefono sul supporto auto</div>
 
   <div class="set-section">Manutenzione</div>
   <button class="set-btn" id="set-clearcache">
@@ -1278,7 +1360,7 @@
    Geocoding: Nominatim (OpenStreetMap)
    ============================================================ */
 
-const APP_VERSION = '9.0';
+const APP_VERSION = '9.3';
 const HOME_BBOX = '41.40,11.73,42.30,13.30';   // vista iniziale: Roma e provincia
 let currentBBox = HOME_BBOX;                       // area effettivamente caricata in questo momento
 
@@ -1715,6 +1797,126 @@ function resizeImage(file){
   });
 }
 
+// ----- Scudo Anti-Truffa: archivio foto prova di consegna -----
+// localStorage ha un tetto di spazio troppo piccolo per delle foto (5-10MB in
+// tutto). Usiamo IndexedDB, un "magazzino" più capiente sempre dentro il
+// browser, sempre locale, sempre gratuito — non tocca nulla di quello che
+// già funziona con localStorage.
+const EVIDENCE_DB = 'lokr-evidence', EVIDENCE_STORE = 'photos';
+
+function openEvidenceDB(){
+  return new Promise((resolve, reject) => {
+    if (!window.indexedDB){ reject(new Error('IndexedDB non supportato')); return; }
+    const req = indexedDB.open(EVIDENCE_DB, 1);
+    req.onupgradeneeded = () => {
+      if (!req.result.objectStoreNames.contains(EVIDENCE_STORE)) req.result.createObjectStore(EVIDENCE_STORE);
+    };
+    req.onsuccess = () => resolve(req.result);
+    req.onerror = () => reject(req.error);
+  });
+}
+async function saveEvidencePhoto(id, blob){
+  const db = await openEvidenceDB();
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction(EVIDENCE_STORE, 'readwrite');
+    tx.objectStore(EVIDENCE_STORE).put(blob, id);
+    tx.oncomplete = () => resolve(true);
+    tx.onerror = () => reject(tx.error);
+  });
+}
+async function getEvidencePhoto(id){
+  const db = await openEvidenceDB();
+  return new Promise((resolve, reject) => {
+    const req = db.transaction(EVIDENCE_STORE, 'readonly').objectStore(EVIDENCE_STORE).get(id);
+    req.onsuccess = () => resolve(req.result || null);
+    req.onerror = () => reject(req.error);
+  });
+}
+async function deleteEvidencePhoto(id){
+  try{
+    const db = await openEvidenceDB();
+    await new Promise((resolve, reject) => {
+      const tx = db.transaction(EVIDENCE_STORE, 'readwrite');
+      tx.objectStore(EVIDENCE_STORE).delete(id);
+      tx.oncomplete = () => resolve(true);
+      tx.onerror = () => reject(tx.error);
+    });
+  }catch(e){ /* non blocca il resto se fallisce */ }
+}
+
+// Come resizeImage, ma incide anche un timbro data/ora sulla foto stessa —
+// così la prova resta leggibile anche se salvata/condivisa fuori dall'app.
+function resizeImageWithStamp(file){
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    const url = URL.createObjectURL(file);
+    img.onload = () => {
+      const maxSide = 1280;
+      const scale = Math.min(1, maxSide / Math.max(img.width, img.height));
+      const canvas = document.createElement('canvas');
+      canvas.width = Math.round(img.width * scale);
+      canvas.height = Math.round(img.height * scale);
+      const ctx = canvas.getContext('2d');
+      ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+
+      const stamp = `📦 Lokr — prova consegna: ${new Date().toLocaleString('it-IT', { day:'2-digit', month:'2-digit', year:'numeric', hour:'2-digit', minute:'2-digit' })}`;
+      const barH = Math.max(28, Math.round(canvas.height * 0.045));
+      ctx.fillStyle = 'rgba(0,0,0,.6)';
+      ctx.fillRect(0, canvas.height - barH, canvas.width, barH);
+      ctx.fillStyle = '#FFC400';
+      ctx.font = `bold ${Math.round(barH * 0.42)}px Arial`;
+      ctx.textBaseline = 'middle';
+      ctx.fillText(stamp, 10, canvas.height - barH / 2);
+
+      URL.revokeObjectURL(url);
+      canvas.toBlob(blob => blob ? resolve(blob) : reject(new Error('Compressione fallita')), 'image/jpeg', 0.8);
+    };
+    img.onerror = () => { URL.revokeObjectURL(url); reject(new Error('Immagine non valida')); };
+    img.src = url;
+  });
+}
+
+async function captureProofPhoto(lockerId){
+  return new Promise((resolve) => {
+    const input = document.createElement('input');
+    input.type = 'file'; input.accept = 'image/*'; input.capture = 'environment';
+    input.onchange = async () => {
+      const file = input.files[0];
+      if (!file){ resolve(false); return; }
+      try{
+        const blob = await resizeImageWithStamp(file);
+        await saveEvidencePhoto(lockerId, blob);
+        const list = loadWallet();
+        const it = list.find(w => w.lockerId === lockerId);
+        if (it){ it.hasProof = true; it.proofAt = Date.now(); saveWallet(list); }
+        toast('📸 Prova di consegna salvata sul telefono');
+        vibrate(20);
+        resolve(true);
+      }catch(e){
+        toast('Non sono riuscito a salvare la foto: riprova');
+        resolve(false);
+      }
+    };
+    input.click();
+  });
+}
+
+// Carica le miniature delle foto prova già presenti, dopo che il pannello è
+// stato disegnato (IndexedDB è asincrono, quindi arrivano un attimo dopo)
+async function loadProofThumbnails(container){
+  const nodes = container.querySelectorAll('[data-proof-thumb]');
+  for (const el of nodes){
+    try{
+      const blob = await getEvidencePhoto(el.dataset.proofThumb);
+      if (blob){
+        const url = URL.createObjectURL(blob);
+        el.innerHTML = `<img src="${url}" alt="Prova di consegna">`;
+        el.onclick = () => window.open(url, '_blank');
+      }
+    }catch(e){ /* niente foto, va bene così */ }
+  }
+}
+
 async function uploadPhoto(file){
   const cfg = sbConfig();
   if (!cfg) return null;
@@ -1748,9 +1950,10 @@ function renderComment(c, pending){
   const photo = c.foto_url ? `<img class="cm-photo" src="${c.foto_url}" alt="Foto del locker" onclick="window.open('${c.foto_url}','_blank')">` : '';
   const tag = pending ? '<span class="cm-pending-tag">In attesa di approvazione</span>' : '';
   const howtoTag = c.tipo === 'indicazioni' ? '<span class="cm-howto-tag">🧭 Come trovarlo</span>' : '';
+  const safetyTag = c.tipo === 'sicurezza' ? '<span class="cm-safety-tag">🌙 Sicurezza</span>' : '';
   const testoHtml = c.testo ? `<div class="cm-text">${String(c.testo).replace(/</g,'&lt;')}</div>` : '';
   return `<div class="cm-item${pending ? ' pending' : ''}">
-    ${tag}${howtoTag}
+    ${tag}${howtoTag}${safetyTag}
     <div class="cm-head"><span class="cm-author">${author}</span><span class="cm-time">${time}</span></div>
     ${testoHtml}
     ${photo}
@@ -1777,12 +1980,24 @@ function setCmType(t){
   cmType = t;
   $('cm-type-generale').classList.toggle('on', t === 'commento');
   $('cm-type-howto').classList.toggle('on', t === 'indicazioni');
+  $('cm-type-safety').classList.toggle('on', t === 'sicurezza');
+  $('cm-text').style.display = t === 'sicurezza' ? 'none' : 'block';
+  $('cm-safety-tags').classList.toggle('show', t === 'sicurezza');
   $('cm-text').placeholder = t === 'indicazioni'
     ? 'Es. "Superato il cancello verde, scendi la rampa a destra, è dietro le scale"…'
     : 'Com\'è la situazione? Es. "funzionante", "pieno da giorni", "posizione comoda"…';
 }
 $('cm-type-generale').onclick = () => setCmType('commento');
 $('cm-type-howto').onclick = () => setCmType('indicazioni');
+$('cm-type-safety').onclick = () => setCmType('sicurezza');
+
+// Tocco su un tag rapido = invio immediato, un solo tap, come i voti stato
+document.querySelectorAll('.cm-safety-btn').forEach(btn => {
+  btn.onclick = () => {
+    $('cm-text').value = btn.dataset.tag;
+    $('cm-send').click();
+  };
+});
 
 function resetCommentForm(){
   $('cm-form').classList.remove('show');
@@ -1824,6 +2039,7 @@ $('cm-send').onclick = async () => {
     saveMyComment({ ...row, created_at: new Date().toISOString() });
     toast('Commento inviato: sarà visibile a tutti dopo l\'approvazione ✅', 3500);
     vibrate(20);
+    incrementKarma();
     resetCommentForm();
     loadComments(currentLocker.id);
   }catch(e){
@@ -1935,6 +2151,7 @@ async function voteStatus(stato){
     setStatusCooldown(currentLocker.id);
     toast(stato === 'ok' ? 'Grazie! Segnato come funzionante 🟢' : 'Grazie! Segnalato pieno/guasto 🔴');
     vibrate(20);
+    incrementKarma();
     renderStatus({ stato, created_at: new Date().toISOString() });
   }catch(e){
     toast('Invio non riuscito: controlla la connessione e riprova', 3200);
@@ -2011,6 +2228,7 @@ function addToWallet(lk){
 }
 function removeFromWallet(lockerId){
   saveWallet(loadWallet().filter(w => w.lockerId !== lockerId));
+  deleteEvidencePhoto(lockerId);
   renderMarkers();
   refreshWalletBadge();
 }
@@ -2083,6 +2301,7 @@ function renderWalletList(){
     const dist = ref ? `<span class="wl-addr">📍 ${fmtWalk(haversine(ref, w))}</span>` : '';
     const dl = deadlineInfo(w);
     const days = [3, 5, 7].map(d => `<button class="wl-day-btn${(w.deadlineDays||3)===d?' sel':''}" data-day="${d}" data-id="${w.lockerId}">${d}gg</button>`).join('');
+    const proofThumb = w.hasProof ? `<div class="wl-proof-thumb" data-proof-thumb="${w.lockerId}"></div>` : '';
     return `<div class="wl-item" data-id="${w.lockerId}">
       <div class="wl-head">
         <span class="wl-dot" style="background:${b.color}"></span>
@@ -2104,9 +2323,11 @@ function renderWalletList(){
         <div class="wl-bar-track"><div class="wl-bar-fill${dl.urgent?' urgent':''}" style="width:${Math.round(dl.pct*100)}%"></div></div>
       </div>
       ${dist}
+      ${proofThumb}
       <div class="wl-actions">
         <button class="wl-complete" data-complete="${w.lockerId}">✓ Completato</button>
-        <button class="wl-go" data-go="${w.lockerId}" style="flex:1">Naviga</button>
+        <button class="wl-icon-btn" data-proof-btn="${w.lockerId}" title="Scatta prova di consegna">📸</button>
+        <button class="wl-icon-btn" data-go="${w.lockerId}" title="Naviga">🧭</button>
       </div>
     </div>`;
   }).join('') : '<div class="wl-empty">Nessun pacco attivo al momento 🎉</div>';
@@ -2114,12 +2335,14 @@ function renderWalletList(){
   const archiveHtml = archived.length ? archived.map(w => {
     const b = BRANDS[w.brand];
     const date = w.completedAt ? new Date(w.completedAt).toLocaleDateString('it-IT', { day:'2-digit', month:'short' }) : '';
+    const proofThumb = w.hasProof ? `<div class="wl-proof-thumb small" data-proof-thumb="${w.lockerId}"></div>` : '';
     return `<div class="wl-arch-item">
       <span class="wl-dot" style="background:${b.color}"></span>
       <div class="wl-arch-main">
         <div class="wl-arch-name">${w.name}</div>
-        <div class="wl-arch-date">✓ Completato il ${date}</div>
+        <div class="wl-arch-date">✓ Completato il ${date}${w.hasProof ? ' · 📸 con prova' : ''}</div>
       </div>
+      ${proofThumb}
       <button class="wl-arch-del" data-archdel="${w.lockerId}">✕</button>
     </div>`;
   }).join('') : '<div class="wl-empty">Archivio vuoto</div>';
@@ -2129,6 +2352,7 @@ function renderWalletList(){
     <button class="wl-archive-toggle" id="wlArchiveToggle">📚 Archivio (${archived.length}) — tocca per aprire</button>
     <div class="wl-archive-list" id="wlArchiveList">${archiveHtml}</div>
   `;
+  loadProofThumbnails(box);
 
   box.querySelectorAll('[data-remove]').forEach(el => {
     el.onclick = (e) => { e.stopPropagation(); removeFromWallet(el.dataset.remove); toast('Rimosso dai tuoi pacchi'); renderWalletList(); };
@@ -2140,6 +2364,16 @@ function renderWalletList(){
       toast('📚 Spostato nell\'archivio — bella spedizione! 🎉');
       vibrate(20);
       renderWalletList();
+    };
+  });
+  box.querySelectorAll('[data-proof-btn]').forEach(el => {
+    el.onclick = async (e) => {
+      e.stopPropagation();
+      const id = el.dataset.proofBtn;
+      el.disabled = true;
+      const ok = await captureProofPhoto(id);
+      el.disabled = false;
+      if (ok) renderWalletList();
     };
   });
   box.querySelectorAll('[data-archdel]').forEach(el => {
@@ -2391,6 +2625,7 @@ $('addSubmit').onclick = async () => {
       const mine = loadLocalAdded(); mine.push({ ...point, custom:true, pending:true }); saveLocalAdded(mine);
       toast('Proposta inviata: sarà visibile a tutti dopo l\'approvazione ✅', 3800);
       vibrate(20);
+      incrementKarma();
       closePanels();
       lockers = mergeCustom(lockers, fetchLocalAdded(currentBBox));
       renderChips(); renderMarkers();
@@ -2799,11 +3034,62 @@ function shortName(displayName){
 }
 function hideResults(){ sResults.classList.remove('show'); }
 
+// Ricerca-Tutto "Incolla e Vai": se l'utente incolla un messaggio lungo e
+// discorsivo (tipo quelli degli acquirenti Vinted), riconosce il corriere
+// citato e prova a isolare solo la parte con l'indirizzo, ignorando saluti
+// e convenevoli. È un'euristica, non un vero parser: se non trova un
+// indirizzo riconoscibile, lascia il testo così com'è.
+function parseSmartSearch(raw){
+  let text = raw.trim();
+  let brand = null;
+
+  const aliases = {
+    inpost: ['inpost', 'paczkomat'],
+    amazon: ['amazon', 'amazon hub', 'locker amazon'],
+    poste: ['poste', 'puntoposte', 'punto poste', 'pt locker'],
+    gls: ['gls'],
+    brt: ['brt', 'fermopoint', 'bartolini'],
+    dhl: ['dhl'],
+    ups: ['ups']
+  };
+  outer: for (const [key, list] of Object.entries(aliases)){
+    for (const a of list){
+      if (new RegExp(`\\b${a.replace(/\s+/g,'\\s+')}\\b`, 'i').test(text)){ brand = key; break outer; }
+    }
+  }
+
+  const looksLikeMessage = text.length > 55 || /\b(ciao|grazie|potresti|per favore|scusa|puoi|vorrei|mi consegni|salve)\b/i.test(text);
+  if (looksLikeMessage){
+    const streetRegex = /((?:via|viale|v\.le|piazza|p\.zza|corso|c\.so|largo|strada|vicolo|contrada)\s+[^\n,;.!?]{2,60}\d+[a-zA-Z]?(?:\s*,\s*[^\n,;.!?]{2,40})?)/i;
+    const m = text.match(streetRegex);
+    if (m) text = m[1].trim();
+  }
+
+  return { cleaned: text, brand, wasCleaned: text !== raw.trim() };
+}
+
 $('searchForm').addEventListener('submit', async e => {
   e.preventDefault();
-  const q = sInput.value.trim();
-  if (!q) return;
+  const rawQ = sInput.value.trim();
+  if (!rawQ) return;
   sInput.blur();
+
+  const parsed = parseSmartSearch(rawQ);
+  const q = parsed.cleaned;
+  if (parsed.wasCleaned || parsed.brand){
+    const brandName = parsed.brand ? BRANDS[parsed.brand].name : null;
+    toast(
+      parsed.wasCleaned && brandName ? `📦 Indirizzo isolato per ${brandName}: "${q}"`
+      : parsed.wasCleaned ? `📦 Ho isolato l'indirizzo: "${q}"`
+      : `📦 Corriere riconosciuto: ${brandName}`,
+      3200
+    );
+  }
+  if (parsed.brand){
+    active = new Set([parsed.brand]);
+    renderChips(); renderMarkers();
+  }
+
   sResults.innerHTML = '<div class="sr-item muted">Cerco…</div>';
   sResults.classList.add('show');
   try{
@@ -2899,6 +3185,55 @@ map.on('moveend', () => {
   $('btnArea').classList.toggle('show', !covered);
 });
 
+// ----- Profilo Karma -----
+// Punteggio puramente locale (salvato solo sul telefono): conta i contributi
+// che hai davvero mandato al registro pubblico — locker proposti, commenti
+// inviati, segnalazioni di stato. Nessun dato lascia il telefono per questo.
+const KARMA_KEY = 'dexlocker-karma';
+const KARMA_LEVELS = [
+  { min:0,  name:'Turista',     avatar:'avatar-1-turista.png' },
+  { min:5,  name:'Esploratore', avatar:'avatar-2-esploratore.png' },
+  { min:15, name:'Sentinella',  avatar:'avatar-3-sentinella.png' },
+  { min:30, name:'Veterano',    avatar:'avatar-4-veterano.png' },
+  { min:50, name:'Leggenda',    avatar:'avatar-5-leggenda.png' }
+];
+
+function getKarma(){ return parseInt(lsGet(KARMA_KEY) || '0', 10) || 0; }
+function karmaLevelIndex(count){
+  let idx = 0;
+  for (let i = 0; i < KARMA_LEVELS.length; i++) if (count >= KARMA_LEVELS[i].min) idx = i;
+  return idx;
+}
+function incrementKarma(){
+  const before = getKarma();
+  const after = before + 1;
+  lsSet(KARMA_KEY, String(after));
+  if (karmaLevelIndex(after) > karmaLevelIndex(before)){
+    const lvl = KARMA_LEVELS[karmaLevelIndex(after)];
+    toast(`🎉 Sei salito di livello: ${lvl.name}!`, 4200);
+    vibrate([15, 60, 15, 60, 30]);
+  }
+  return after;
+}
+function renderKarma(){
+  const count = getKarma();
+  const idx = karmaLevelIndex(count);
+  const level = KARMA_LEVELS[idx];
+  const next = KARMA_LEVELS[idx + 1];
+  $('karmaAvatar').src = level.avatar;
+  $('karmaLevelName').textContent = level.name;
+  $('karmaCount').textContent = `${count} contribut${count === 1 ? 'o' : 'i'}`;
+  if (next){
+    const span = next.min - level.min;
+    const pct = Math.min(1, Math.max(0, (count - level.min) / span));
+    $('karmaBarFill').style.width = Math.round(pct * 100) + '%';
+    $('karmaNext').textContent = `Ancora ${next.min - count} per diventare ${next.name}`;
+  } else {
+    $('karmaBarFill').style.width = '100%';
+    $('karmaNext').textContent = '🏆 Livello massimo raggiunto';
+  }
+}
+
 // ----- Menu sviluppatore (nascosto, protetto da password) -----
 const DEV_PASSWORD = 'Scatto2026';
 const DEV_UNLOCKED_KEY = 'dexlocker-dev-unlocked';
@@ -2957,6 +3292,7 @@ $('devPwInput').addEventListener('keydown', e => { if (e.key === 'Enter') checkD
 
 // ----- Impostazioni -----
 function openSettings(){
+  renderKarma();
   $('set-version').textContent = 'v' + APP_VERSION;
   $('set-count').textContent = lockers.length.toLocaleString('it-IT');
   $('set-inpost').textContent = lockers.filter(l => l.official).length.toLocaleString('it-IT');
@@ -2987,6 +3323,52 @@ function openSettings(){
   setActiveTab('settings');
 }
 $('btnSettings').onclick = openSettings;
+
+// ----- Modalità Guida (Wake Lock) -----
+// Impedisce allo schermo di spegnersi durante il Giro Spedizioni. Non è
+// persistente tra un avvio e l'altro dell'app: si riattiva ogni volta a mano,
+// come una vera "modalità" temporanea per la sessione di guida in corso.
+let driveModeOn = false;
+let wakeLockSentinel = null;
+
+async function acquireWakeLock(){
+  if (!('wakeLock' in navigator)) return false;
+  try{
+    wakeLockSentinel = await navigator.wakeLock.request('screen');
+    wakeLockSentinel.addEventListener('release', () => { wakeLockSentinel = null; });
+    return true;
+  }catch(e){ return false; }
+}
+function releaseWakeLock(){
+  if (wakeLockSentinel){ wakeLockSentinel.release().catch(() => {}); wakeLockSentinel = null; }
+}
+
+async function setDriveMode(on){
+  if (on && !('wakeLock' in navigator)){
+    toast('Modalità Guida non supportata su questo browser (serve iOS 16.4 o più recente)', 3800);
+    return;
+  }
+  driveModeOn = on;
+  document.body.classList.toggle('driving-mode', on);
+  $('driveModeBtn').classList.toggle('on', on);
+  $('driveModeStatus').textContent = on ? 'attiva' : 'spenta';
+  if (on){
+    const ok = await acquireWakeLock();
+    toast(ok ? '🚗 Modalità Guida attiva: schermo sempre acceso' : 'Schermo non bloccato, ma pulsanti ingranditi', 3200);
+  } else {
+    releaseWakeLock();
+    toast('Modalità Guida disattivata');
+  }
+}
+$('driveModeBtn').onclick = () => setDriveMode(!driveModeOn);
+
+// Il Wake Lock si rilascia da solo se l'app va in background: lo ripristino
+// automaticamente al ritorno, se la modalità era ancora attiva
+document.addEventListener('visibilitychange', () => {
+  if (driveModeOn && document.visibilityState === 'visible' && !wakeLockSentinel){
+    acquireWakeLock();
+  }
+});
 
 $('set-sbsave').onclick = () => {
   const url = $('set-sburl').value.trim().replace(/\/$/, '');
