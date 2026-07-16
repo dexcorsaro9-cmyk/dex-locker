@@ -1904,7 +1904,7 @@ $('set-clearmine').onclick = () => {
 $('set-clearfavs').onclick = () => {
   if (!favs.size){ toast('Non hai preferiti salvati'); return; }
   if (!confirm(`Cancellare tutti i ${favs.size} preferiti? L'operazione non si può annullare.`)) return;
-  favs.clsupabase.jsear();
+  favs.clear();
   saveFavs();
   favOnly = false;
   renderChips(); renderMarkers();
