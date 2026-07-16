@@ -5,9 +5,9 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<meta name="apple-mobile-web-app-title" content="Dex Locker">
+<meta name="apple-mobile-web-app-title" content="Lokr">
 <meta name="theme-color" content="#12151C">
-<title>Dex Locker</title>
+<title>Lokr</title>
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='22' fill='%23FFC400'/><rect x='16' y='16' width='30' height='28' rx='7' fill='%2312151C'/><rect x='54' y='16' width='30' height='28' rx='7' fill='%2312151C'/><rect x='16' y='54' width='30' height='28' rx='7' fill='%2312151C'/><rect x='54' y='54' width='30' height='28' rx='7' fill='%23D22730'/></svg>">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
@@ -63,13 +63,15 @@
   .brand{display:flex;align-items:center;gap:10px;min-width:0}
   .logo{
     width:40px;height:40px;border-radius:12px;flex-shrink:0;
-    background:var(--accent);
     display:flex;align-items:center;justify-content:center;
-    box-shadow:inset 0 -3px 0 rgba(0,0,0,.15);
+    overflow:hidden;
   }
-  h1{font-size:18px;font-weight:800;letter-spacing:-.02em;line-height:1.1}
-  h1 em{font-style:normal;color:var(--accent);-webkit-text-stroke:.4px var(--ink)}
-  @media (prefers-color-scheme: dark){ h1 em{-webkit-text-stroke:0} }
+  .wordmark{height:22px;width:auto;display:block;margin-bottom:2px}
+  .wordmark-dark{display:none}
+  @media (prefers-color-scheme: dark){
+    .wordmark-light{display:none}
+    .wordmark-dark{display:block}
+  }
   #subtitle{font-size:12px;color:var(--ink-2);font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
   .actions{display:flex;gap:8px;flex-shrink:0}
   .icon-btn{
@@ -171,9 +173,17 @@
     font-size:12px;font-weight:800;
     border:2.5px solid #fff;box-shadow:0 2px 8px rgba(0,0,0,.35);
     transform:rotate(-45deg);
+    position:relative;
   }
   .pin span{transform:rotate(45deg)}
   .pin.searched{background:var(--ink);color:var(--accent);border-color:var(--accent)}
+  .pin.starred{box-shadow:0 0 0 3px var(--accent), 0 2px 8px rgba(0,0,0,.4)}
+  .pin-star{
+    position:absolute;top:-9px;right:-9px;transform:rotate(45deg);
+    width:15px;height:15px;border-radius:50%;background:var(--accent);color:var(--accent-ink);
+    display:flex;align-items:center;justify-content:center;font-size:9px;
+    border:2px solid #fff;
+  }
   .cluster{
     background:var(--ink);color:var(--bg);
     border-radius:50%;display:flex;align-items:center;justify-content:center;
@@ -550,6 +560,33 @@
   }
   .route-empty{font-size:13px;color:var(--ink-2);font-weight:500;text-align:center;padding:16px 0}
 
+  /* I miei pacchi */
+  .wl-item{
+    background:var(--bg);border:1.5px solid var(--line);border-radius:14px;
+    padding:12px 13px;margin-bottom:10px;
+  }
+  .wl-head{display:flex;align-items:center;gap:9px;margin-bottom:9px}
+  .wl-dot{width:11px;height:11px;border-radius:50%;flex-shrink:0}
+  .wl-main{flex:1;min-width:0}
+  .wl-name{font-size:14px;font-weight:800;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .wl-addr{font-size:12px;color:var(--ink-2);font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .wl-remove{
+    width:30px;height:30px;border-radius:9px;border:1.5px solid var(--line);background:var(--surface);
+    color:var(--danger);cursor:pointer;flex-shrink:0;font-size:15px;font-weight:800;
+  }
+  .wl-fields{display:flex;flex-direction:column;gap:7px}
+  .wl-fields input{
+    width:100%;height:38px;border-radius:9px;border:1.5px solid var(--line);
+    background:var(--surface);color:var(--ink);padding:0 11px;
+    font-family:inherit;font-size:14px;font-weight:500;outline:none;
+    -webkit-user-select:text;user-select:text;
+  }
+  .wl-go{
+    width:100%;margin-top:9px;padding:10px;border-radius:9px;border:none;cursor:pointer;
+    background:var(--ink);color:var(--bg);font-family:inherit;font-size:12px;font-weight:800;
+  }
+  .wl-empty{font-size:13px;color:var(--ink-2);font-weight:500;text-align:center;padding:20px 0}
+
   /* Password sviluppatore */
   #devPwBackdrop{
     position:fixed;inset:0;z-index:2000;background:rgba(10,12,18,.5);
@@ -596,15 +633,11 @@
 <header>
   <div class="brand">
     <div class="logo">
-      <svg viewBox="0 0 24 24" width="24" height="24" aria-hidden="true">
-        <rect x="2.5" y="3" width="8.5" height="8" rx="1.8" fill="#12151C"/>
-        <rect x="13" y="3" width="8.5" height="8" rx="1.8" fill="#12151C"/>
-        <rect x="2.5" y="13" width="8.5" height="8" rx="1.8" fill="#12151C"/>
-        <rect x="13" y="13" width="8.5" height="8" rx="1.8" fill="#D22730"/>
-      </svg>
+      <img src="apple-touch-icon.png" width="40" height="40" alt="Lokr" style="border-radius:12px;display:block">
     </div>
     <div>
-      <h1>Dex <em>Locker</em></h1>
+      <img class="wordmark wordmark-light" src="lokr-wordmark-solid-navy.png" alt="Lokr">
+      <img class="wordmark wordmark-dark" src="lokr-wordmark-transparent.png" alt="Lokr">
       <p id="subtitle">Roma e provincia</p>
     </div>
   </div>
@@ -614,6 +647,9 @@
     </button>
     <button class="icon-btn" id="btnReload" title="Aggiorna dati" aria-label="Aggiorna dati">
       <svg viewBox="0 0 24 24"><path d="M21 12a9 9 0 1 1-2.6-6.3"/><path d="M21 3v6h-6"/></svg>
+    </button>
+    <button class="icon-btn" id="btnWallet" title="I miei pacchi" aria-label="I miei pacchi">
+      <svg viewBox="0 0 24 24"><path d="M21 8l-9-5-9 5 9 5 9-5z"/><path d="M3 8v8l9 5 9-5V8"/><path d="M12 13v8"/></svg>
     </button>
     <button class="icon-btn" id="btnSettings" title="Impostazioni" aria-label="Impostazioni">
       <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .34 1.87l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.7 1.7 0 0 0-1.87-.34 1.7 1.7 0 0 0-1.03 1.56V21a2 2 0 1 1-4 0v-.09a1.7 1.7 0 0 0-1.11-1.56 1.7 1.7 0 0 0-1.87.34l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.7 1.7 0 0 0 .34-1.87 1.7 1.7 0 0 0-1.56-1.03H3a2 2 0 1 1 0-4h.09a1.7 1.7 0 0 0 1.56-1.11 1.7 1.7 0 0 0-.34-1.87l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.7 1.7 0 0 0 1.87.34h.01A1.7 1.7 0 0 0 10 3.09V3a2 2 0 1 1 4 0v.09a1.7 1.7 0 0 0 1.03 1.56 1.7 1.7 0 0 0 1.87-.34l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.7 1.7 0 0 0-.34 1.87v.01A1.7 1.7 0 0 0 20.91 10H21a2 2 0 1 1 0 4h-.09a1.7 1.7 0 0 0-1.51 1z"/></svg>
@@ -702,6 +738,10 @@
     <svg viewBox="0 0 24 24"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><path d="M8.6 13.5l6.8 4M15.4 6.5l-6.8 4"/></svg>
     Condividi questo locker
   </button>
+  <button class="sh-btn secondary" id="sh-wallet" style="width:100%;margin-top:10px">
+    <svg viewBox="0 0 24 24"><path d="M21 8l-9-5-9 5 9 5 9-5z"/><path d="M3 8v8l9 5 9-5V8"/></svg>
+    Aggiungi ai miei pacchi
+  </button>
 
 
   <div class="cm-title">💬 Commenti</div>
@@ -744,6 +784,14 @@
   </div>
   <div id="listRef"></div>
   <div id="listRows"></div>
+</div>
+
+<!-- I miei pacchi -->
+<div id="walletPanel" class="panel" role="dialog" aria-modal="true">
+  <div class="grab"></div>
+  <div id="setTitle">📦 I miei pacchi</div>
+  <p class="route-hint">Segna i locker dove hai un pacco in arrivo: li ritrovi qui, con la stella ★ sulla mappa, e puoi aggiungere codice di tracciamento e una nota.</p>
+  <div id="walletList"></div>
 </div>
 
 <!-- Impostazioni -->
@@ -870,12 +918,12 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet.markercluster/1.5.3/leaflet.markercluster.min.js"></script>
 <script>
 /* ============================================================
-   DEX LOCKER — mappa dei locker per pacchi in tutta Italia
+   LOKR — mappa dei locker per pacchi in tutta Italia
    Dati: OpenStreetMap via Overpass API (amenity=parcel_locker)
    Geocoding: Nominatim (OpenStreetMap)
    ============================================================ */
 
-const APP_VERSION = '6.0';
+const APP_VERSION = '6.2';
 const HOME_BBOX = '41.40,11.73,42.30,13.30';   // vista iniziale: Roma e provincia
 let currentBBox = HOME_BBOX;                       // area effettivamente caricata in questo momento
 
@@ -937,7 +985,7 @@ L.tileLayer(
   isDark
     ? 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png'
     : 'https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png',
-  { attribution:`<b>Dex Locker v${APP_VERSION}</b> | &copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> &copy; CARTO`, maxZoom:20 }
+  { attribution:`<b>Lokr v${APP_VERSION}</b> | &copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> &copy; CARTO`, maxZoom:20 }
 ).addTo(map);
 
 const cluster = L.markerClusterGroup({
@@ -1503,6 +1551,113 @@ function shareLocker(lk){
 }
 $('sh-share').onclick = () => { if (currentLocker) shareLocker(currentLocker); };
 
+// ----- I miei pacchi (versione manuale: nessun tracking automatico) -----
+// L'utente sceglie a mano il locker di destinazione; il codice di tracciamento
+// resta solo un promemoria testuale, non viene letto/interpretato dall'app.
+const WALLET_KEY = 'dexlocker-wallet-v1';
+let walletIds = new Set();
+
+function loadWallet(){ try{ return JSON.parse(lsGet(WALLET_KEY)) || []; }catch(e){ return []; } }
+function saveWallet(list){
+  lsSet(WALLET_KEY, JSON.stringify(list));
+  walletIds = new Set(list.map(w => w.lockerId));
+}
+walletIds = new Set(loadWallet().map(w => w.lockerId));
+
+function addToWallet(lk){
+  const list = loadWallet();
+  if (list.some(w => w.lockerId === lk.id)) return;
+  const b = BRANDS[lk.brand];
+  list.unshift({
+    id: 'w' + Date.now(),
+    lockerId: lk.id, brand: lk.brand,
+    name: lk.tags.name || lk.tags.ref || ('Locker ' + b.name),
+    addr: formatAddress(lk.tags),
+    lat: lk.lat, lon: lk.lon,
+    tracking: '', note: '', addedAt: Date.now()
+  });
+  saveWallet(list);
+  renderMarkers();
+}
+function removeFromWallet(lockerId){
+  saveWallet(loadWallet().filter(w => w.lockerId !== lockerId));
+  renderMarkers();
+}
+function updateWalletField(lockerId, field, value){
+  const list = loadWallet();
+  const it = list.find(w => w.lockerId === lockerId);
+  if (it){ it[field] = value; saveWallet(list); }
+}
+
+function refreshWalletButton(){
+  const inWallet = currentLocker && walletIds.has(currentLocker.id);
+  const btn = $('sh-wallet');
+  btn.innerHTML = inWallet
+    ? '<svg viewBox="0 0 24 24"><path d="M20 6L9 17l-5-5"/></svg> Nei tuoi pacchi ✓ (tocca per rimuovere)'
+    : '<svg viewBox="0 0 24 24"><path d="M21 8l-9-5-9 5 9 5 9-5z"/><path d="M3 8v8l9 5 9-5V8"/></svg> Aggiungi ai miei pacchi';
+}
+$('sh-wallet').onclick = () => {
+  if (!currentLocker) return;
+  if (walletIds.has(currentLocker.id)){ removeFromWallet(currentLocker.id); toast('Rimosso dai tuoi pacchi'); }
+  else { addToWallet(currentLocker); toast('📦 Aggiunto ai tuoi pacchi — vedi la stella ★ sulla mappa'); }
+  refreshWalletButton();
+};
+
+function renderWalletList(){
+  const list = loadWallet();
+  const box = $('walletList');
+  if (!list.length){
+    box.innerHTML = '<div class="wl-empty">Nessun pacco in arrivo salvato.<br>Apri un locker sulla mappa e tocca "Aggiungi ai miei pacchi".</div>';
+    return;
+  }
+  const ref = (userPos || places.home) ? (userPos || places.home) : null;
+  box.innerHTML = list.map(w => {
+    const b = BRANDS[w.brand];
+    const dist = ref ? `<span class="wl-addr">📍 ${fmtDist(haversine(ref, w))}</span>` : '';
+    return `<div class="wl-item" data-id="${w.lockerId}">
+      <div class="wl-head">
+        <span class="wl-dot" style="background:${b.color}"></span>
+        <div class="wl-main">
+          <div class="wl-name">${w.name}</div>
+          <div class="wl-addr">${w.addr || b.name}</div>
+        </div>
+        <button class="wl-remove" data-remove="${w.lockerId}">✕</button>
+      </div>
+      <div class="wl-fields">
+        <input type="text" placeholder="Codice di tracciamento (facoltativo, solo promemoria)" value="${(w.tracking||'').replace(/"/g,'&quot;')}" data-field="tracking" data-id="${w.lockerId}">
+        <input type="text" placeholder="Nota (es. cosa contiene)" value="${(w.note||'').replace(/"/g,'&quot;')}" data-field="note" data-id="${w.lockerId}">
+      </div>
+      ${dist}
+      <button class="wl-go" data-go="${w.lockerId}">Apri sulla mappa e naviga</button>
+    </div>`;
+  }).join('');
+
+  box.querySelectorAll('[data-remove]').forEach(el => {
+    el.onclick = (e) => { e.stopPropagation(); removeFromWallet(el.dataset.remove); toast('Rimosso dai tuoi pacchi'); renderWalletList(); };
+  });
+  box.querySelectorAll('[data-field]').forEach(el => {
+    el.addEventListener('change', () => updateWalletField(el.dataset.id, el.dataset.field, el.value.trim()));
+  });
+  box.querySelectorAll('[data-go]').forEach(el => {
+    el.onclick = () => {
+      const w = list.find(x => x.lockerId === el.dataset.go);
+      if (!w) return;
+      map.setView([w.lat, w.lon], 17);
+      const lk = lockers.find(l => l.id === w.lockerId);
+      if (lk) openSheet(lk);
+      else closePanels();
+    };
+  });
+}
+
+function openWalletPanel(){
+  renderWalletList();
+  closePanels();
+  $('walletPanel').classList.add('show');
+  $('backdrop').classList.add('show');
+}
+$('btnWallet').onclick = openWalletPanel;
+
 // ----- Giro Spedizioni -----
 // Trova, tra i locker già caricati, il punto di partenza (per il primo brand
 // scelto) che minimizza la distanza totale dai locker più vicini degli altri
@@ -1755,15 +1910,17 @@ async function load(bbox, label, { isRefresh = false } = {}){
 }
 
 // ----- Marker -----
-function makeIcon(brandKey){
+function makeIcon(brandKey, starred = false){
   const b = BRANDS[brandKey];
+  const star = starred ? '<div class="pin-star">★</div>' : '';
   return L.divIcon({
     className:'',
-    html:`<div class="pin" style="background:${b.color};color:${b.text}"><span>${b.letter}</span></div>`,
+    html:`<div class="pin${starred ? ' starred' : ''}" style="background:${b.color};color:${b.text}"><span>${b.letter}</span>${star}</div>`,
     iconSize:[28,28], iconAnchor:[14,26]
   });
 }
-const icons = {}; Object.keys(BRANDS).forEach(k => icons[k] = makeIcon(k));
+const icons = {}, iconsStarred = {};
+Object.keys(BRANDS).forEach(k => { icons[k] = makeIcon(k); iconsStarred[k] = makeIcon(k, true); });
 
 // ----- Filtri smart -----
 let smartFilters = { open:false, h24:false, covered:false };
@@ -1827,7 +1984,8 @@ function renderMarkers(){
   for (const k in markerById) delete markerById[k];
   const ms = [];
   for (const lk of visibleLockers()){
-    const m = L.marker([lk.lat, lk.lon], { icon: icons[lk.brand] });
+    const starred = walletIds.has(lk.id);
+    const m = L.marker([lk.lat, lk.lon], { icon: starred ? iconsStarred[lk.brand] : icons[lk.brand] });
     m.on('click', () => openSheet(lk));
     markerById[lk.id] = m;
     ms.push(m);
@@ -1949,6 +2107,7 @@ function openSheet(lk){
   resetCommentForm();
   loadComments(lk.id);
   loadStatus(lk.id);
+  refreshWalletButton();
 
   closePanels();
   $('sheet').classList.add('show');
@@ -1973,10 +2132,11 @@ function closePanels(){
   $('settingsPanel').classList.remove('show');
   $('addPanel').classList.remove('show');
   $('routePanel').classList.remove('show');
+  $('walletPanel').classList.remove('show');
   $('backdrop').classList.remove('show');
 }
 $('backdrop').onclick = closePanels;
-for (const pid of ['sheet','listPanel','settingsPanel','addPanel','routePanel']){
+for (const pid of ['sheet','listPanel','settingsPanel','addPanel','routePanel','walletPanel']){
   let touchY = null;
   const el = $(pid);
   el.addEventListener('touchstart', e => touchY = e.touches[0].clientY, {passive:true});
