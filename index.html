@@ -67,14 +67,24 @@
   .splash-icon{
     width:96px;height:96px;border-radius:26px;overflow:hidden;
     box-shadow:0 14px 34px rgba(0,0,0,.45), 0 0 0 1px rgba(255,255,255,.06);
-    animation:splashPop .6s cubic-bezier(.34,1.56,.64,1);
+    animation:splashPop .6s cubic-bezier(.34,1.56,.64,1), splashBreathe 2.2s ease-in-out .6s infinite;
   }
   .splash-icon img{width:100%;height:100%;display:block}
   .splash-wordmark{height:34px;width:auto;animation:splashFadeUp .5s ease .18s both}
+  .splash-dots{display:flex;gap:7px;margin-top:6px;opacity:0;animation:splashFadeUp .5s ease .5s forwards}
+  .splash-dots span{
+    width:7px;height:7px;border-radius:50%;background:var(--accent);
+    animation:splashDot 1.2s ease-in-out infinite;
+  }
+  .splash-dots span:nth-child(2){animation-delay:.15s}
+  .splash-dots span:nth-child(3){animation-delay:.3s}
   @keyframes splashPop{from{transform:scale(.55);opacity:0}to{transform:scale(1);opacity:1}}
+  @keyframes splashBreathe{0%,100%{transform:scale(1)}50%{transform:scale(1.05)}}
   @keyframes splashFadeUp{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
+  @keyframes splashDot{0%,80%,100%{opacity:.25;transform:translateY(0)}40%{opacity:1;transform:translateY(-4px)}}
   @media (prefers-reduced-motion: reduce){
-    .splash-icon, .splash-wordmark{animation:none}
+    .splash-icon, .splash-wordmark, .splash-dots span{animation:none}
+    .splash-dots{opacity:1}
   }
 
   /* ---------- Header ---------- */
@@ -851,6 +861,7 @@
 <div id="splash">
   <div class="splash-icon"><img src="apple-touch-icon.png" alt="Lokr"></div>
   <img class="splash-wordmark" src="lokr-wordmark-transparent.png" alt="Lokr">
+  <div class="splash-dots"><span></span><span></span><span></span></div>
 </div>
 
 
@@ -1192,7 +1203,7 @@
    Geocoding: Nominatim (OpenStreetMap)
    ============================================================ */
 
-const APP_VERSION = '8.2';
+const APP_VERSION = '8.3';
 const HOME_BBOX = '41.40,11.73,42.30,13.30';   // vista iniziale: Roma e provincia
 let currentBBox = HOME_BBOX;                       // area effettivamente caricata in questo momento
 
@@ -2872,7 +2883,10 @@ document.querySelectorAll('.panel input, .panel textarea, #devPwInput').forEach(
 });
 
 // ----- Splash screen d'avvio -----
-const SPLASH_MIN_MS = 700, SPLASH_MAX_MS = 3000;
+// Non è più un timer scollegato: lo splash resta visibile finché i locker non
+// sono davvero pronti (o al massimo per SPLASH_MAX_MS, rete di sicurezza per
+// le connessioni lente — a quel punto subentra il caricatore dentro la mappa).
+const SPLASH_MIN_MS = 900, SPLASH_MAX_MS = 4000;
 const splashStart = Date.now();
 function hideSplash(){
   const el = $('splash');
@@ -2880,11 +2894,10 @@ function hideSplash(){
   el.classList.add('hide');
   setTimeout(() => el.remove(), 500);
 }
-function scheduleHideSplash(){
+function hideSplashRespectingMinTime(){
   const wait = Math.max(0, SPLASH_MIN_MS - (Date.now() - splashStart));
   setTimeout(hideSplash, wait);
 }
-setTimeout(hideSplash, SPLASH_MAX_MS);   // rete di sicurezza se la rete è lenta
 
 // ----- Avvio -----
 loadPlaces();
@@ -2897,8 +2910,12 @@ if (saved && Array.isArray(saved.lockers) && saved.lockers.length){
   renderMarkers();
   $('subtitle').textContent = `${lockers.length.toLocaleString('it-IT')} locker · ${saved.label || 'dati salvati'}`;
 }
-scheduleHideSplash();
-load(HOME_BBOX, 'Roma e provincia');
+
+// Caricamento in background durante lo splash: la promessa vince la corsa se
+// finisce prima del tetto massimo, altrimenti vince la rete di sicurezza.
+const bootLoad = load(HOME_BBOX, 'Roma e provincia');
+const splashSafety = new Promise(resolve => setTimeout(resolve, SPLASH_MAX_MS));
+Promise.race([bootLoad, splashSafety]).then(hideSplashRespectingMinTime);
 </script>
 </body>
 </html>
