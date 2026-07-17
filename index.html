@@ -651,20 +651,20 @@
   .set-section:first-of-type{margin-top:4px}
 
   .karma-card{
-    display:flex;align-items:center;gap:14px;
+    display:flex;flex-direction:column;align-items:center;text-align:center;gap:4px;
     background:linear-gradient(145deg, var(--bg), color-mix(in srgb, var(--accent) 8%, var(--bg)));
-    border:1.5px solid var(--line);border-radius:18px;padding:14px;margin-bottom:6px;
+    border:1.5px solid var(--line);border-radius:20px;padding:18px 16px;margin-bottom:6px;
   }
-  .karma-avatar{width:96px;height:96px;object-fit:contain;flex-shrink:0}
-  .karma-info{flex:1;min-width:0}
-  .karma-level{font-size:16px;font-weight:800;letter-spacing:-.01em}
-  .karma-count{font-size:12px;color:var(--ink-2);font-weight:600;margin:1px 0 8px}
-  .karma-bar-track{width:100%;height:7px;border-radius:999px;background:var(--line);overflow:hidden}
+  .karma-avatar{width:192px;height:192px;object-fit:contain;flex-shrink:0;margin-bottom:4px}
+  .karma-info{width:100%}
+  .karma-level{font-size:19px;font-weight:800;letter-spacing:-.01em}
+  .karma-count{font-size:12.5px;color:var(--ink-2);font-weight:600;margin:2px 0 10px}
+  .karma-bar-track{width:100%;height:8px;border-radius:999px;background:var(--line);overflow:hidden}
   .karma-bar-fill{
     height:100%;border-radius:999px;transition:width .4s cubic-bezier(.34,1.2,.64,1);
     background:linear-gradient(90deg, color-mix(in srgb, var(--accent) 100%, white 20%), var(--accent));
   }
-  .karma-next{font-size:10.5px;color:var(--ink-2);font-weight:600;margin-top:5px}
+  .karma-next{font-size:11px;color:var(--ink-2);font-weight:600;margin-top:6px}
   .set-info{
     background:var(--bg);border:1.5px solid var(--line);border-radius:14px;
     padding:6px 14px;margin-bottom:6px;
@@ -965,6 +965,37 @@
   #devPwCancel{background:var(--bg);color:var(--ink);border:1.5px solid var(--line) !important}
   #devPwOk{background:var(--accent);color:var(--accent-ink)}
 
+  /* Lightbox avatar Karma */
+  #avatarLightbox{
+    position:fixed;inset:0;z-index:5000;
+    background:rgba(8,10,16,.92);
+    -webkit-backdrop-filter:blur(6px);backdrop-filter:blur(6px);
+    display:flex;flex-direction:column;align-items:center;justify-content:center;gap:18px;
+    padding:24px;opacity:0;pointer-events:none;transition:opacity .25s ease;
+  }
+  #avatarLightbox.show{opacity:1;pointer-events:auto}
+  #avatarLightboxClose{
+    position:absolute;top:calc(16px + env(safe-area-inset-top));right:16px;
+    width:42px;height:42px;border-radius:50%;border:none;cursor:pointer;
+    background:rgba(255,255,255,.12);color:#fff;font-size:18px;
+    display:flex;align-items:center;justify-content:center;
+  }
+  #avatarLightboxImg{
+    width:min(78vw, 340px);height:min(78vw, 340px);object-fit:contain;
+    filter:drop-shadow(0 20px 40px rgba(0,0,0,.5));
+    -webkit-user-select:auto;user-select:auto;-webkit-touch-callout:default;
+  }
+  #avatarLightboxSave{
+    display:flex;align-items:center;justify-content:center;gap:8px;
+    padding:14px 26px;border-radius:999px;text-decoration:none;
+    background:linear-gradient(165deg, color-mix(in srgb, var(--accent) 100%, white 20%), var(--accent));
+    color:var(--accent-ink);font-family:inherit;font-size:14px;font-weight:800;
+    box-shadow:0 4px 0 color-mix(in srgb, var(--accent) 100%, black 25%);
+  }
+  #avatarLightboxSave:active{transform:translateY(2px);box-shadow:0 2px 0 color-mix(in srgb, var(--accent) 100%, black 25%)}
+  .avatar-lightbox-hint{color:rgba(255,255,255,.55);font-size:11.5px;font-weight:500;text-align:center;max-width:260px}
+  .karma-avatar{cursor:pointer}
+
   @media (prefers-reduced-motion: reduce){
     *,*::before,*::after{animation-duration:.001s !important;transition-duration:.001s !important}
   }
@@ -994,7 +1025,7 @@
     <div>
       <img class="wordmark wordmark-light" src="lokr-wordmark-solid-navy.png" alt="Lokr">
       <img class="wordmark wordmark-dark" src="lokr-wordmark-transparent.png" alt="Lokr">
-      <p id="subtitle">Roma e provincia</p>
+      <p id="subtitle">Localizzo…</p>
     </div>
   </div>
 </header>
@@ -1351,6 +1382,14 @@
   </div>
 </div>
 
+<!-- Lightbox avatar Karma: tap sull'avatar per ingrandirlo e salvarlo -->
+<div id="avatarLightbox" role="dialog" aria-modal="true">
+  <button id="avatarLightboxClose" aria-label="Chiudi">✕</button>
+  <img id="avatarLightboxImg" src="" alt="Il tuo avatar Lokr">
+  <a id="avatarLightboxSave" download>⬇️ Salva immagine</a>
+  <div class="avatar-lightbox-hint">Su iPhone: tieni premuto sull'immagine e scegli "Salva in Foto"</div>
+</div>
+
 <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet.markercluster/1.5.3/leaflet.markercluster.min.js"></script>
 <script>
@@ -1360,11 +1399,37 @@
    Geocoding: Nominatim (OpenStreetMap)
    ============================================================ */
 
-const APP_VERSION = '9.4';
-const HOME_BBOX = '41.40,11.73,42.30,13.30';   // vista iniziale: Roma e provincia
+const APP_VERSION = '9.7';
+const HOME_BBOX = '41.40,11.73,42.30,13.30';   // vista iniziale: area di Roma (il nome mostrato è sempre dinamico)
 let currentBBox = HOME_BBOX;                       // area effettivamente caricata in questo momento
 
-function areaLabel(bbox){ return bbox === HOME_BBOX ? 'Roma e provincia' : "quest'area"; }
+function areaLabel(bbox){ return "quest'area"; }   // segnaposto immediato, sostituito subito dal nome vero della città
+
+// Riconosce la città reale in base al centro dell'area caricata, così la
+// scritta sotto il logo segue davvero dove ti trovi in Italia, non solo Roma.
+function bboxCenter(bbox){
+  const [s, w, n, e] = bbox.split(',').map(Number);
+  return { lat: (s + n) / 2, lon: (w + e) / 2 };
+}
+async function fetchCityName(lat, lon){
+  try{
+    const url = `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lon}&zoom=10&addressdetails=1`;
+    const r = await fetch(url, { headers:{ 'Accept':'application/json' } });
+    const data = await r.json();
+    const a = data.address || {};
+    return a.city || a.town || a.village || a.municipality || a.county || null;
+  }catch(e){ return null; }
+}
+async function refreshAreaLabel(bbox){
+  const c = bboxCenter(bbox);
+  const city = await fetchCityName(c.lat, c.lon);
+  // Solo se nel frattempo l'utente non si è già spostato altrove
+  if (city && bbox === currentBBox){
+    $('subtitle').textContent = `${lockers.length.toLocaleString('it-IT')} locker · ${city}`;
+    const c2 = cache.get();
+    if (c2) cache.set({ ...c2, label: city });
+  }
+}
 function reloadCurrentArea(){ return load(currentBBox, areaLabel(currentBBox), { isRefresh:true }); }
 
 const OVERPASS_ENDPOINTS = [
@@ -2692,6 +2757,7 @@ async function load(bbox, label, { isRefresh = false } = {}){
       : `Dati aggiornati: ${lockers.length.toLocaleString('it-IT')} locker ✓`);
     $('btnArea').classList.remove('show');
     cache.set({ ts: Date.now(), label, lockers, bbox });
+    refreshAreaLabel(bbox);
   }catch(e){
     const inSandbox = /claude|anthropic/i.test(location.hostname) || location.protocol === 'blob:';
     if (inSandbox){
@@ -3234,6 +3300,20 @@ function renderKarma(){
   }
 }
 
+// Tap sull'avatar Karma: apre il lightbox per vederlo grande e salvarlo
+$('karmaAvatar').onclick = () => {
+  const src = $('karmaAvatar').src;
+  const levelName = KARMA_LEVELS[karmaLevelIndex(getKarma())].name;
+  $('avatarLightboxImg').src = src;
+  $('avatarLightboxSave').href = src;
+  $('avatarLightboxSave').download = `lokr-${levelName.toLowerCase()}.png`;
+  $('avatarLightbox').classList.add('show');
+};
+$('avatarLightboxClose').onclick = () => $('avatarLightbox').classList.remove('show');
+$('avatarLightbox').addEventListener('click', e => {
+  if (e.target.id === 'avatarLightbox') $('avatarLightbox').classList.remove('show');
+});
+
 // ----- Menu sviluppatore (nascosto, protetto da password) -----
 const DEV_PASSWORD = 'Scatto2026';
 const DEV_UNLOCKED_KEY = 'dexlocker-dev-unlocked';
@@ -3512,7 +3592,7 @@ if (saved && Array.isArray(saved.lockers) && saved.lockers.length){
     bootLoad = load(currentBBox, areaLabel(currentBBox), { isRefresh:true });
   }
 } else {
-  bootLoad = load(HOME_BBOX, 'Roma e provincia');
+  bootLoad = load(HOME_BBOX, areaLabel(HOME_BBOX));
 }
 
 // Caricamento in background durante lo splash: la promessa vince la corsa se
