@@ -16,6 +16,9 @@
 <title>Lokr</title>
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='22' fill='%23FFC400'/><rect x='16' y='16' width='30' height='28' rx='7' fill='%2312151C'/><rect x='54' y='16' width='30' height='28' rx='7' fill='%2312151C'/><rect x='16' y='54' width='30' height='28' rx='7' fill='%2312151C'/><rect x='54' y='54' width='30' height='28' rx='7' fill='%23D22730'/></svg>">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
+<link rel="manifest" href="manifest.json">
+<link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
+<link rel="icon" type="image/png" sizes="512x512" href="icon-512.png">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet.markercluster/1.5.3/MarkerCluster.min.css">
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -227,6 +230,17 @@
   #mapwrap{position:relative;flex:1;min-height:0}
   #map{position:absolute;inset:0;background:var(--bg)}
   .leaflet-control-attribution{font-size:9px !important;opacity:.75}
+
+  /* Anteprima rapida (tocco prolungato su un pin) */
+  .peek-popup-wrap .leaflet-popup-content-wrapper{
+    background:var(--surface);border-radius:14px;box-shadow:0 8px 24px rgba(0,0,0,.25);
+  }
+  .peek-popup-wrap .leaflet-popup-content{margin:10px 13px;min-width:0}
+  .peek-popup-wrap .leaflet-popup-tip{background:var(--surface)}
+  .peek-popup{display:flex;flex-direction:column;gap:2px;font-family:'Archivo',sans-serif}
+  .peek-popup b{font-size:13px;color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:180px}
+  .peek-popup span{font-size:11px;color:var(--ink-2);font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:180px}
+  .peek-dist{font-size:11px;font-weight:800;color:var(--ink);margin-top:2px}
 
   .pin{
     width:28px;height:28px;border-radius:50% 50% 50% 4px;
@@ -532,7 +546,16 @@
   #sh-fav.on{border-color:var(--accent);background:var(--accent)}
   #sh-fav.on svg{stroke:var(--accent-ink);fill:var(--accent-ink)}
   #sh-fav:active{transform:scale(.92)}
-  #sh-addr{font-size:14px;color:var(--ink-2);font-weight:500;line-height:1.45}
+  .sh-addr-row{display:flex;align-items:flex-start;gap:8px}
+  #sh-addr{font-size:14px;color:var(--ink-2);font-weight:500;line-height:1.45;flex:1}
+  #sh-copyaddr{
+    width:30px;height:30px;flex-shrink:0;border-radius:9px;border:1.5px solid var(--line);
+    background:var(--surface);color:var(--ink-2);cursor:pointer;
+    display:flex;align-items:center;justify-content:center;
+  }
+  #sh-copyaddr svg{width:15px;height:15px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+  #sh-copyaddr:active{transform:scale(.9)}
+  #sh-copyaddr.copied{color:#1FAE5A;border-color:#1FAE5A}
   #sh-dist{font-size:13px;font-weight:800;color:var(--ink);margin-top:6px;display:none;line-height:1.6}
   #sh-dist.show{display:block}
   .sh-rows{margin:14px 0 18px;display:flex;flex-direction:column;gap:8px}
@@ -634,6 +657,13 @@
   .cm-pending-tag{font-size:10px;font-weight:800;color:var(--accent-ink);background:var(--accent);
     padding:2px 8px;border-radius:999px;display:inline-block;margin-bottom:5px}
   .cm-empty{font-size:13px;color:var(--ink-2);font-weight:500;padding:6px 2px}
+  .skel{
+    border-radius:5px;
+    background:linear-gradient(90deg, var(--line) 25%, color-mix(in srgb, var(--line) 40%, var(--surface)) 50%, var(--line) 75%);
+    background-size:200% 100%;animation:skelShimmer 1.4s ease-in-out infinite;
+  }
+  @keyframes skelShimmer{0%{background-position:200% 0}100%{background-position:-200% 0}}
+  .cm-item.skeleton-item{opacity:.9}
 
   #cm-form{
     display:none;background:var(--bg);border:1.5px solid var(--line);border-radius:14px;
@@ -721,6 +751,18 @@
     color:var(--ink-2);margin:18px 0 8px;
   }
   .set-section:first-of-type{margin-top:4px}
+
+  #settingsQuickNav{
+    display:flex;gap:7px;overflow-x:auto;padding-bottom:2px;margin-bottom:14px;
+    scrollbar-width:none;-webkit-overflow-scrolling:touch;
+  }
+  #settingsQuickNav::-webkit-scrollbar{display:none}
+  #settingsQuickNav button{
+    flex-shrink:0;padding:8px 14px;border-radius:999px;cursor:pointer;
+    border:1.5px solid var(--line);background:var(--chip-bg);color:var(--ink);
+    font-family:inherit;font-size:12px;font-weight:700;
+  }
+  #settingsQuickNav button:active{transform:scale(.94)}
 
   .karma-card{
     display:flex;flex-direction:column;align-items:center;text-align:center;gap:4px;
@@ -1037,13 +1079,14 @@
   #devPwCancel{background:var(--bg);color:var(--ink);border:1.5px solid var(--line) !important}
   #devPwOk{background:var(--accent);color:var(--accent-ink)}
 
-  #whatsNewBackdrop{
+  /* Novità di questa versione / modali informativi generici */
+  #whatsNewBackdrop, #geoPrimerBackdrop{
     position:fixed;inset:0;z-index:4000;background:rgba(8,10,16,.55);
     -webkit-backdrop-filter:blur(4px);backdrop-filter:blur(4px);
     opacity:0;pointer-events:none;transition:opacity .25s ease;
   }
-  #whatsNewBackdrop.show{opacity:1;pointer-events:auto}
-  #whatsNewModal{
+  #whatsNewBackdrop.show, #geoPrimerBackdrop.show{opacity:1;pointer-events:auto}
+  #whatsNewModal, #geoPrimerModal{
     position:fixed;left:50%;top:50%;transform:translate(-50%,-50%) scale(.92);
     z-index:4001;width:min(340px, calc(100vw - 48px));
     max-height:80dvh;overflow-y:auto;-webkit-overflow-scrolling:touch;
@@ -1051,31 +1094,13 @@
     box-shadow:0 20px 60px rgba(0,0,0,.4);text-align:center;
     opacity:0;pointer-events:none;transition:opacity .25s ease, transform .25s ease;
   }
-  #whatsNewModal.show{opacity:1;pointer-events:auto;transform:translate(-50%,-50%) scale(1)}
+  #whatsNewModal.show, #geoPrimerModal.show{opacity:1;pointer-events:auto;transform:translate(-50%,-50%) scale(1)}
   .wn-icon{font-size:40px;margin-bottom:6px}
   .wn-title{font-size:19px;font-weight:800;letter-spacing:-.01em;margin-bottom:16px}
   .wn-list{list-style:none;text-align:left;display:flex;flex-direction:column;gap:11px;margin-bottom:20px}
   .wn-list li{font-size:13.5px;font-weight:600;color:var(--ink);line-height:1.4;padding-left:2px}
-
-  /* Novità di questa versione */
-  #whatsNewBackdrop{
-    position:fixed;inset:0;z-index:4000;background:rgba(8,10,16,.5);
-    opacity:0;pointer-events:none;transition:opacity .25s ease;
-  }
-  #whatsNewBackdrop.show{opacity:1;pointer-events:auto}
-  #whatsNewModal{
-    position:fixed;left:50%;top:50%;transform:translate(-50%,-50%) scale(.92);
-    z-index:4001;width:min(340px, calc(100vw - 48px));
-    background:var(--surface);border-radius:22px;padding:24px 22px;
-    box-shadow:0 20px 60px rgba(0,0,0,.4);
-    opacity:0;pointer-events:none;transition:opacity .25s ease, transform .25s ease;
-    max-height:80dvh;overflow-y:auto;
-  }
-  #whatsNewModal.show{opacity:1;pointer-events:auto;transform:translate(-50%,-50%) scale(1)}
-  .wn-icon{font-size:38px;text-align:center;margin-bottom:6px}
-  .wn-title{font-size:19px;font-weight:800;text-align:center;letter-spacing:-.02em;margin-bottom:16px}
-  .wn-list{list-style:none;display:flex;flex-direction:column;gap:12px;margin-bottom:18px}
-  .wn-list li{font-size:13.5px;font-weight:600;color:var(--ink);line-height:1.4;padding-left:2px}
+  .geo-primer-text{font-size:13.5px;font-weight:500;color:var(--ink-2);line-height:1.5;margin-bottom:18px}
+  #geoPrimerSkip{background:transparent;border-color:transparent;color:var(--ink-2);margin-top:2px}
 
   /* Lightbox avatar Karma */
   #avatarLightbox{
@@ -1240,7 +1265,12 @@
       <svg viewBox="0 0 24 24"><path d="M12 3l2.7 5.6 6.1.9-4.4 4.3 1 6.1-5.4-2.9-5.4 2.9 1-6.1L3.2 9.5l6.1-.9z"/></svg>
     </button>
   </div>
-  <div id="sh-addr"></div>
+  <div class="sh-addr-row">
+    <div id="sh-addr"></div>
+    <button id="sh-copyaddr" title="Copia indirizzo" aria-label="Copia indirizzo">
+      <svg viewBox="0 0 24 24"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15V5a2 2 0 0 1 2-2h10"/></svg>
+    </button>
+  </div>
   <div id="sh-dist"></div>
   <div class="sh-rows" id="sh-rows"></div>
 
@@ -1354,6 +1384,13 @@
   <div class="grab"></div>
   <div id="setTitle">⚙️ Impostazioni</div>
 
+  <div id="settingsQuickNav">
+    <button data-jump="sec-luoghi">📍 Luoghi</button>
+    <button data-jump="sec-aspetto">🎨 Aspetto</button>
+    <button data-jump="sec-guida">🚗 Guida</button>
+    <button data-jump="sec-manutenzione">🔧 Manutenzione</button>
+  </div>
+
   <div class="karma-card">
     <img id="karmaAvatar" class="karma-avatar" src="avatar-1-turista.png" alt="Il tuo livello">
     <div class="karma-info">
@@ -1374,7 +1411,7 @@
     <div class="set-info-row full"><span>Rete InPost scaricata il</span><b id="set-ipdate"></b></div>
   </div>
 
-  <div class="set-section">I tuoi luoghi</div>
+  <div class="set-section" id="sec-luoghi">I tuoi luoghi</div>
   <div class="set-field">
     <label for="set-home">🏠 Casa</label>
     <div class="set-field-row">
@@ -1394,21 +1431,21 @@
     <div class="set-hint" id="set-work-cur">Non impostato</div>
   </div>
 
-  <div class="set-section">Aspetto</div>
+  <div class="set-section" id="sec-aspetto">Aspetto</div>
   <div class="theme-switch" id="themeSwitch">
     <button class="theme-opt" data-theme="system">📱 Sistema</button>
     <button class="theme-opt" data-theme="light">☀️ Chiaro</button>
     <button class="theme-opt" data-theme="dark">🌙 Scuro</button>
   </div>
 
-  <div class="set-section">Sul campo</div>
+  <div class="set-section" id="sec-guida">Sul campo</div>
   <button class="set-btn" id="driveModeBtn">
     <svg viewBox="0 0 24 24"><path d="M5 17h14M5 17a2 2 0 0 1-2-2v-3l2-5a2 2 0 0 1 2-1h10a2 2 0 0 1 2 1l2 5v3a2 2 0 0 1-2 2M5 17a2 2 0 0 0 2 2h1a2 2 0 0 0 2-2M17 17a2 2 0 0 0 2 2h1a2 2 0 0 0 2-2"/></svg>
     🚗 Modalità Guida: <span id="driveModeStatus">spenta</span>
   </button>
   <div class="set-hint">Impedisce allo schermo di spegnersi e ingrandisce i pulsanti — comoda durante il Giro Spedizioni col telefono sul supporto auto</div>
 
-  <div class="set-section">Manutenzione</div>
+  <div class="set-section" id="sec-manutenzione">Manutenzione</div>
   <button class="set-btn" id="set-clearcache">
     <svg viewBox="0 0 24 24"><path d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6"/><path d="M10 11v6M14 11v6"/></svg>
     Svuota cache e riscarica i dati
@@ -1530,6 +1567,16 @@
   <button id="whatsNewClose" class="set-btn primary">Fantastico, continua</button>
 </div>
 
+<!-- Spiegazione prima della richiesta di posizione, mostrata solo la prima volta -->
+<div id="geoPrimerBackdrop"></div>
+<div id="geoPrimerModal" role="dialog" aria-modal="true">
+  <div class="wn-icon">📍</div>
+  <div class="wn-title">Trova i locker vicino a te</div>
+  <p class="geo-primer-text">Lokr userà la tua posizione solo per mostrarti i locker più vicini e calcolare le distanze. Non la salviamo né la condividiamo con nessuno.</p>
+  <button id="geoPrimerContinue" class="set-btn primary">Continua</button>
+  <button id="geoPrimerSkip" class="set-btn">Non ora</button>
+</div>
+
 <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet.markercluster/1.5.3/leaflet.markercluster.min.js"></script>
 <script>
@@ -1539,7 +1586,7 @@
    Geocoding: Nominatim (OpenStreetMap)
    ============================================================ */
 
-const APP_VERSION = '9.8';
+const APP_VERSION = '10.0';
 const HOME_BBOX = '41.40,11.73,42.30,13.30';   // vista iniziale: area di Roma (il nome mostrato è sempre dinamico)
 let currentBBox = HOME_BBOX;                       // area effettivamente caricata in questo momento
 
@@ -2176,9 +2223,17 @@ function renderComment(c, pending){
   </div>`;
 }
 
+function skeletonBlock(n=2){
+  const item = `<div class="cm-item skeleton-item">
+    <div class="skel skel-line" style="width:35%;height:11px;margin-bottom:8px"></div>
+    <div class="skel skel-line" style="width:90%;height:9px;margin-bottom:5px"></div>
+    <div class="skel skel-line" style="width:65%;height:9px"></div>
+  </div>`;
+  return item.repeat(n);
+}
 async function loadComments(lockerId){
   const list = $('cm-list');
-  list.innerHTML = '<div class="cm-empty">Carico i commenti…</div>';
+  list.innerHTML = skeletonBlock(2);
   const mine = loadMyComments().filter(c => c.locker_id === lockerId);
   try{
     const approved = sbConfig() ? await fetchComments(lockerId) : [];
@@ -3026,6 +3081,32 @@ function visibleLockers(){
   });
 }
 
+let longPressTimer = null, longPressMoved = false;
+map.on('movestart zoomstart', () => { longPressMoved = true; clearTimeout(longPressTimer); });
+
+function attachLongPress(marker, lk){
+  const start = () => {
+    longPressMoved = false;
+    longPressTimer = setTimeout(() => {
+      if (longPressMoved) return;
+      const b = BRANDS[lk.brand];
+      const name = lk.tags.name || lk.tags.ref || ('Locker ' + b.name);
+      const addr = formatAddress(lk.tags) || b.name;
+      let distHtml = '';
+      const ref = userPos || places.home;
+      if (ref) distHtml = `<div class="peek-dist">📍 ${fmtWalk(haversine(ref, lk))}</div>`;
+      marker.bindPopup(
+        `<div class="peek-popup"><b>${name}</b><span>${addr}</span>${distHtml}</div>`,
+        { closeButton:false, className:'peek-popup-wrap', offset:[0,-24] }
+      ).openPopup();
+      vibrate(12);
+    }, 480);
+  };
+  const cancel = () => { clearTimeout(longPressTimer); };
+  marker.on('mousedown touchstart', start);
+  marker.on('mouseup touchend mouseout', cancel);
+}
+
 function renderMarkers(){
   cluster.clearLayers();
   for (const k in markerById) delete markerById[k];
@@ -3034,7 +3115,8 @@ function renderMarkers(){
   for (const lk of visible){
     const starred = walletIds.has(lk.id);
     const m = L.marker([lk.lat, lk.lon], { icon: starred ? iconsStarred[lk.brand] : icons[lk.brand] });
-    m.on('click', () => openSheet(lk));
+    m.on('click', () => { m.closePopup(); openSheet(lk); });
+    attachLongPress(m, lk);
     markerById[lk.id] = m;
     ms.push(m);
   }
@@ -3163,6 +3245,16 @@ function openSheet(lk){
   $('sh-google').href = `https://www.google.com/maps/dir/?api=1&destination=${lk.lat},${lk.lon}&travelmode=driving`;
   $('sh-apple').href  = `https://maps.apple.com/?daddr=${lk.lat},${lk.lon}`;
   $('sh-streetview').href = `https://www.google.com/maps/@?api=1&map_action=pano&viewpoint=${lk.lat},${lk.lon}`;
+  $('sh-copyaddr').onclick = async () => {
+    const text = $('sh-addr').textContent;
+    try{
+      await navigator.clipboard.writeText(text);
+      $('sh-copyaddr').classList.add('copied');
+      toast('📋 Indirizzo copiato');
+      vibrate(15);
+      setTimeout(() => $('sh-copyaddr').classList.remove('copied'), 1500);
+    }catch(e){ toast('Non sono riuscito a copiare: seleziona il testo a mano'); }
+  };
 
   resetCommentForm();
   setCommentsExpanded(false);
@@ -3366,15 +3458,10 @@ function parseSmartSearch(raw){
   return { cleaned: text, brand, wasCleaned: text !== raw.trim() };
 }
 
-$('searchForm').addEventListener('submit', async e => {
-  e.preventDefault();
-  const rawQ = sInput.value.trim();
-  if (!rawQ) return;
-  sInput.blur();
-
+async function runSearch(rawQ, { fromSubmit = false } = {}){
   const parsed = parseSmartSearch(rawQ);
   const q = parsed.cleaned;
-  if (parsed.wasCleaned || parsed.brand){
+  if (fromSubmit && (parsed.wasCleaned || parsed.brand)){
     const brandName = parsed.brand ? BRANDS[parsed.brand].name : null;
     toast(
       parsed.wasCleaned && brandName ? `📦 Indirizzo isolato per ${brandName}: "${q}"`
@@ -3383,7 +3470,7 @@ $('searchForm').addEventListener('submit', async e => {
       3200
     );
   }
-  if (parsed.brand){
+  if (fromSubmit && parsed.brand){
     active = new Set([parsed.brand]);
     renderChips(); renderMarkers();
   }
@@ -3395,7 +3482,10 @@ $('searchForm').addEventListener('submit', async e => {
     const r = await fetch(url, { headers:{ 'Accept':'application/json' } });
     const res = await r.json();
     if (!res.length){
-      sResults.innerHTML = '<div class="sr-item muted">Nessun risultato: prova ad aggiungere la città (es. "Via Tiburtina, Guidonia")</div>';
+      sResults.innerHTML = fromSubmit
+        ? '<div class="sr-item muted">Nessun risultato: prova ad aggiungere la città (es. "Via Tiburtina, Guidonia")</div>'
+        : '';
+      if (!fromSubmit && !res.length) sResults.classList.remove('show');
       return;
     }
     sResults.innerHTML = res.map((it, i) =>
@@ -3411,8 +3501,29 @@ $('searchForm').addEventListener('submit', async e => {
       };
     });
   }catch(err){
-    sResults.innerHTML = '<div class="sr-item muted">Errore di rete nella ricerca: riprova</div>';
+    if (fromSubmit) sResults.innerHTML = '<div class="sr-item muted">Errore di rete nella ricerca: riprova</div>';
   }
+}
+
+$('searchForm').addEventListener('submit', async e => {
+  e.preventDefault();
+  const rawQ = sInput.value.trim();
+  if (!rawQ) return;
+  sInput.blur();
+  clearTimeout(liveSearchTimer);
+  await runSearch(rawQ, { fromSubmit:true });
+});
+
+// Ricerca "mentre scrivi": dopo una breve pausa, mostra suggerimenti live
+// senza dover premere "Vai" — con debounce per non intasare il server
+let liveSearchTimer;
+sInput.addEventListener('input', () => {
+  $('searchClear').classList.toggle('show', sInput.value.length > 0);
+  clearTimeout(liveSearchTimer);
+  const val = sInput.value.trim();
+  if (!val){ showRecentSearches(); return; }
+  if (val.length < 3) return;
+  liveSearchTimer = setTimeout(() => runSearch(val, { fromSubmit:false }), 550);
 });
 
 function selectPlace(lat, lon, label){
@@ -3437,14 +3548,10 @@ $('searchClear').onclick = () => {
   searchPos = null;
   sInput.focus();
 };
-sInput.addEventListener('input', () => {
-  $('searchClear').classList.toggle('show', sInput.value.length > 0);
-  if (!sInput.value) showRecentSearches();
-});
 map.on('click', hideResults);
 
 // ----- Geolocalizzazione -----
-$('btnLocate').onclick = () => {
+function requestLocation(){
   if (!navigator.geolocation){ toast('Geolocalizzazione non disponibile'); return; }
   toast('Cerco la tua posizione…', 1800);
   navigator.geolocation.getCurrentPosition(
@@ -3461,6 +3568,23 @@ $('btnLocate').onclick = () => {
     () => toast('Impossibile ottenere la posizione: controlla i permessi', 3200),
     { enableHighAccuracy:true, timeout:10000 }
   );
+}
+const GEO_PRIMER_KEY = 'dexlocker-geo-primer-shown';
+$('btnLocate').onclick = () => {
+  if (lsGet(GEO_PRIMER_KEY)){ requestLocation(); return; }
+  $('geoPrimerBackdrop').classList.add('show');
+  $('geoPrimerModal').classList.add('show');
+};
+$('geoPrimerContinue').onclick = () => {
+  lsSet(GEO_PRIMER_KEY, '1');
+  $('geoPrimerBackdrop').classList.remove('show');
+  $('geoPrimerModal').classList.remove('show');
+  requestLocation();
+};
+$('geoPrimerSkip').onclick = () => {
+  lsSet(GEO_PRIMER_KEY, '1');
+  $('geoPrimerBackdrop').classList.remove('show');
+  $('geoPrimerModal').classList.remove('show');
 };
 
 // ----- Ricarica e ricerca in area -----
@@ -3604,6 +3728,13 @@ $('devPwBackdrop').onclick = hideDevPasswordPrompt;
 $('devPwInput').addEventListener('keydown', e => { if (e.key === 'Enter') checkDevPassword(); });
 
 // ----- Impostazioni -----
+document.querySelectorAll('#settingsQuickNav button').forEach(btn => {
+  btn.onclick = () => {
+    const el = document.getElementById(btn.dataset.jump);
+    if (el) el.scrollIntoView({ behavior:'smooth', block:'start' });
+  };
+});
+
 function openSettings(){
   renderKarma();
   $('set-version').textContent = 'v' + APP_VERSION;
@@ -3837,6 +3968,13 @@ $('whatsNewClose').onclick = () => {
   $('whatsNewBackdrop').classList.remove('show');
   $('whatsNewModal').classList.remove('show');
 };
+
+// ----- PWA: registra il service worker (installabilità + avvio offline) -----
+if ('serviceWorker' in navigator){
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('sw.js').catch(() => {});
+  });
+}
 
 // ----- Avvio -----
 loadPlaces();
