@@ -2,6 +2,12 @@
 <html lang="it">
 <head>
 <meta charset="UTF-8">
+<script>
+  try{
+    var t = localStorage.getItem('dexlocker-theme');
+    if (t === 'light' || t === 'dark') document.documentElement.dataset.theme = t;
+  }catch(e){}
+</script>
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -39,6 +45,15 @@
       --chip-bg:#1B1F29;
       --shadow:0 8px 28px rgba(0,0,0,.5);
     }
+  }
+  /* Tema forzato dall'utente in Impostazioni, indipendente dal sistema */
+  html[data-theme="dark"]{
+    --bg:#12151C;--surface:#1B1F29;--ink:#F2F3F5;--ink-2:#9AA1B0;
+    --line:#2A2F3C;--chip-bg:#1B1F29;--shadow:0 8px 28px rgba(0,0,0,.5);
+  }
+  html[data-theme="light"]{
+    --bg:#F6F5F1;--surface:#FFFFFF;--ink:#171A21;--ink-2:#5C6270;
+    --line:#E4E2DA;--chip-bg:#FFFFFF;--shadow:0 8px 28px rgba(20,22,30,.14);
   }
   *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
   html,body{height:100%;-webkit-text-size-adjust:100%;background:var(--bg)}
@@ -104,6 +119,10 @@
     .wordmark-light{display:none}
     .wordmark-dark{display:block}
   }
+  html[data-theme="dark"] .wordmark-light{display:none}
+  html[data-theme="dark"] .wordmark-dark{display:block}
+  html[data-theme="light"] .wordmark-light{display:block}
+  html[data-theme="light"] .wordmark-dark{display:none}
   #subtitle{font-size:12px;color:var(--ink-2);font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
   .icon-btn{
     width:40px;height:40px;border-radius:12px;border:1.5px solid var(--line);
@@ -267,6 +286,20 @@
   #btnArea.show{display:flex}
   #btnArea:active{transform:translateX(-50%) scale(.95)}
 
+  #emptyFilterBanner{
+    position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);z-index:750;
+    display:none;flex-direction:column;align-items:center;gap:10px;
+    background:var(--surface);padding:18px 22px;border-radius:18px;
+    box-shadow:0 10px 30px rgba(0,0,0,.2);text-align:center;
+    font-size:13px;font-weight:700;color:var(--ink);max-width:78%;
+  }
+  #emptyFilterBanner.show{display:flex}
+  #emptyFilterReset{
+    padding:9px 18px;border-radius:999px;border:none;cursor:pointer;
+    background:var(--accent);color:var(--accent-ink);font-family:inherit;font-size:13px;font-weight:800;
+  }
+  #emptyFilterReset:active{transform:scale(.95)}
+
   #mapControls{
     position:absolute;top:12px;left:12px;z-index:800;
     display:flex;flex-direction:column;gap:8px;
@@ -391,9 +424,29 @@
     max-width:86%;text-align:center;
   }
   #toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+  #toast.with-action{display:flex;align-items:center;gap:12px;padding-right:8px}
+  #toastUndoBtn{
+    border:none;background:var(--accent);color:var(--accent-ink);
+    padding:6px 13px;border-radius:999px;font-family:inherit;font-size:12px;font-weight:800;cursor:pointer;
+    flex-shrink:0;
+  }
 
   /* Barra di navigazione in basso */
   /* Modalità Guida: pulsanti più grandi, comodi da toccare mentre si guida */
+  .theme-switch{display:flex;gap:8px;margin-bottom:16px}
+  .theme-opt{
+    flex:1;padding:11px 6px;border-radius:12px;cursor:pointer;
+    border:1.5px solid var(--line);background:var(--surface);color:var(--ink-2);
+    font-family:inherit;font-size:12px;font-weight:700;text-align:center;
+    transition:transform .15s cubic-bezier(.34,1.56,.64,1);
+  }
+  .theme-opt:active{transform:scale(.95)}
+  .theme-opt.sel{
+    background:linear-gradient(165deg, color-mix(in srgb, var(--ink) 100%, white 18%), var(--ink));
+    border-color:transparent;color:var(--bg);
+    box-shadow:0 3px 8px rgba(0,0,0,.25);
+  }
+
   #driveModeBtn.on{
     background:linear-gradient(165deg, color-mix(in srgb, var(--accent) 100%, white 20%), var(--accent) 55%, color-mix(in srgb, var(--accent) 100%, black 8%));
     border-color:transparent;color:var(--accent-ink);
@@ -432,6 +485,8 @@
   .tab-item svg{width:23px;height:23px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;transition:transform .2s cubic-bezier(.34,1.56,.64,1)}
   .tab-item.active{color:var(--accent-ink);background:color-mix(in srgb, var(--accent) 16%, transparent)}
   @media (prefers-color-scheme: dark){ .tab-item.active{color:var(--accent)} }
+  html[data-theme="dark"] .tab-item.active{color:var(--accent)}
+  html[data-theme="light"] .tab-item.active{color:var(--accent-ink)}
   .tab-item.active svg{transform:translateY(-1px) scale(1.06)}
 
   /* ---------- Pannelli (sheet dettaglio + lista vicini + impostazioni) ---------- */
@@ -542,10 +597,27 @@
   .status-btn:disabled{opacity:.45}
 
   /* Commenti e foto sul locker */
-  .cm-title{
+  .cm-section-toggle{
+    width:100%;display:flex;align-items:center;gap:8px;
+    background:none;border:none;cursor:pointer;padding:20px 0 10px;
     font-size:13px;font-weight:800;color:var(--ink-2);text-transform:uppercase;letter-spacing:.03em;
-    margin:20px 0 10px;
   }
+  .cm-section-toggle span:first-child{color:var(--ink);text-transform:none;letter-spacing:normal;font-size:15px}
+  .cm-section-count{
+    background:var(--line);color:var(--ink-2);border-radius:999px;
+    padding:2px 9px;font-size:11px;font-weight:800;
+  }
+  .cm-chevron{
+    width:16px;height:16px;margin-left:auto;stroke:var(--ink-2);fill:none;
+    stroke-width:2.4;stroke-linecap:round;stroke-linejoin:round;
+    transition:transform .25s cubic-bezier(.34,1.2,.64,1);
+  }
+  .cm-section-toggle[aria-expanded="true"] .cm-chevron{transform:rotate(180deg)}
+  #cmSectionBody{
+    display:grid;grid-template-rows:0fr;transition:grid-template-rows .3s ease;
+  }
+  .cm-section-inner{overflow:hidden;min-height:0}
+  .cm-section-toggle[aria-expanded="true"] + #cmSectionBody{grid-template-rows:1fr}
   #cm-list{display:flex;flex-direction:column;gap:10px;margin-bottom:12px}
   .cm-item{
     background:var(--bg);border:1.5px solid var(--line);border-radius:14px;padding:11px 13px;
@@ -965,6 +1037,46 @@
   #devPwCancel{background:var(--bg);color:var(--ink);border:1.5px solid var(--line) !important}
   #devPwOk{background:var(--accent);color:var(--accent-ink)}
 
+  #whatsNewBackdrop{
+    position:fixed;inset:0;z-index:4000;background:rgba(8,10,16,.55);
+    -webkit-backdrop-filter:blur(4px);backdrop-filter:blur(4px);
+    opacity:0;pointer-events:none;transition:opacity .25s ease;
+  }
+  #whatsNewBackdrop.show{opacity:1;pointer-events:auto}
+  #whatsNewModal{
+    position:fixed;left:50%;top:50%;transform:translate(-50%,-50%) scale(.92);
+    z-index:4001;width:min(340px, calc(100vw - 48px));
+    max-height:80dvh;overflow-y:auto;-webkit-overflow-scrolling:touch;
+    background:var(--surface);border-radius:22px;padding:26px 22px 22px;
+    box-shadow:0 20px 60px rgba(0,0,0,.4);text-align:center;
+    opacity:0;pointer-events:none;transition:opacity .25s ease, transform .25s ease;
+  }
+  #whatsNewModal.show{opacity:1;pointer-events:auto;transform:translate(-50%,-50%) scale(1)}
+  .wn-icon{font-size:40px;margin-bottom:6px}
+  .wn-title{font-size:19px;font-weight:800;letter-spacing:-.01em;margin-bottom:16px}
+  .wn-list{list-style:none;text-align:left;display:flex;flex-direction:column;gap:11px;margin-bottom:20px}
+  .wn-list li{font-size:13.5px;font-weight:600;color:var(--ink);line-height:1.4;padding-left:2px}
+
+  /* Novità di questa versione */
+  #whatsNewBackdrop{
+    position:fixed;inset:0;z-index:4000;background:rgba(8,10,16,.5);
+    opacity:0;pointer-events:none;transition:opacity .25s ease;
+  }
+  #whatsNewBackdrop.show{opacity:1;pointer-events:auto}
+  #whatsNewModal{
+    position:fixed;left:50%;top:50%;transform:translate(-50%,-50%) scale(.92);
+    z-index:4001;width:min(340px, calc(100vw - 48px));
+    background:var(--surface);border-radius:22px;padding:24px 22px;
+    box-shadow:0 20px 60px rgba(0,0,0,.4);
+    opacity:0;pointer-events:none;transition:opacity .25s ease, transform .25s ease;
+    max-height:80dvh;overflow-y:auto;
+  }
+  #whatsNewModal.show{opacity:1;pointer-events:auto;transform:translate(-50%,-50%) scale(1)}
+  .wn-icon{font-size:38px;text-align:center;margin-bottom:6px}
+  .wn-title{font-size:19px;font-weight:800;text-align:center;letter-spacing:-.02em;margin-bottom:16px}
+  .wn-list{list-style:none;display:flex;flex-direction:column;gap:12px;margin-bottom:18px}
+  .wn-list li{font-size:13.5px;font-weight:600;color:var(--ink);line-height:1.4;padding-left:2px}
+
   /* Lightbox avatar Karma */
   #avatarLightbox{
     position:fixed;inset:0;z-index:5000;
@@ -1063,6 +1175,10 @@
     <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg>
     Cerca in quest'area
   </button>
+  <div id="emptyFilterBanner">
+    <span>🔍 Nessun locker con questi filtri</span>
+    <button id="emptyFilterReset">Mostra tutti</button>
+  </div>
   <div id="fabMenu">
     <button class="fab-opt" id="fabRoute" style="--d:1">
       <span class="fab-icon">🧭</span>
@@ -1169,7 +1285,13 @@
   </button>
 
 
-  <div class="cm-title">💬 Commenti</div>
+  <button class="cm-section-toggle" id="cmSectionToggle" aria-expanded="false">
+    <span>💬 Commenti</span>
+    <span class="cm-section-count" id="cmSectionCount"></span>
+    <svg class="cm-chevron" viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></svg>
+  </button>
+  <div id="cmSectionBody">
+  <div class="cm-section-inner">
   <div id="cm-list"></div>
   <button class="set-btn" id="cm-toggle">
     <svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>
@@ -1201,6 +1323,8 @@
       <button id="cm-cancel">Annulla</button>
       <button id="cm-send">Invia commento</button>
     </div>
+  </div>
+  </div>
   </div>
 </div>
 
@@ -1268,6 +1392,13 @@
       <button class="fld-btn" id="set-work-save">Salva</button>
     </div>
     <div class="set-hint" id="set-work-cur">Non impostato</div>
+  </div>
+
+  <div class="set-section">Aspetto</div>
+  <div class="theme-switch" id="themeSwitch">
+    <button class="theme-opt" data-theme="system">📱 Sistema</button>
+    <button class="theme-opt" data-theme="light">☀️ Chiaro</button>
+    <button class="theme-opt" data-theme="dark">🌙 Scuro</button>
   </div>
 
   <div class="set-section">Sul campo</div>
@@ -1390,6 +1521,15 @@
   <div class="avatar-lightbox-hint">Su iPhone: tieni premuto sull'immagine e scegli "Salva in Foto"</div>
 </div>
 
+<!-- Novità: banner mostrato una sola volta dopo un aggiornamento -->
+<div id="whatsNewBackdrop"></div>
+<div id="whatsNewModal" role="dialog" aria-modal="true">
+  <div class="wn-icon">🎉</div>
+  <div class="wn-title">Novità in Lokr</div>
+  <ul id="whatsNewList" class="wn-list"></ul>
+  <button id="whatsNewClose" class="set-btn primary">Fantastico, continua</button>
+</div>
+
 <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet.markercluster/1.5.3/leaflet.markercluster.min.js"></script>
 <script>
@@ -1399,7 +1539,7 @@
    Geocoding: Nominatim (OpenStreetMap)
    ============================================================ */
 
-const APP_VERSION = '9.7';
+const APP_VERSION = '9.8';
 const HOME_BBOX = '41.40,11.73,42.30,13.30';   // vista iniziale: area di Roma (il nome mostrato è sempre dinamico)
 let currentBBox = HOME_BBOX;                       // area effettivamente caricata in questo momento
 
@@ -1506,8 +1646,19 @@ map.addLayer(cluster);
 const $ = id => document.getElementById(id);
 let toastTimer;
 function toast(msg, ms=2600){
-  const t = $('toast'); t.textContent = msg; t.classList.add('show');
+  const t = $('toast'); t.classList.remove('with-action'); t.innerHTML = '';
+  t.textContent = msg; t.classList.add('show');
   clearTimeout(toastTimer); toastTimer = setTimeout(()=>t.classList.remove('show'), ms);
+}
+// Toast con pulsante "Annulla": per azioni facili da toccare per sbaglio.
+// undoFn viene richiamata solo se l'utente tocca esplicitamente Annulla.
+function toastUndo(msg, undoFn, ms=5000){
+  const t = $('toast');
+  t.innerHTML = `<span>${msg}</span><button id="toastUndoBtn">Annulla</button>`;
+  t.classList.add('show', 'with-action');
+  clearTimeout(toastTimer);
+  $('toastUndoBtn').onclick = () => { undoFn(); t.classList.remove('show'); };
+  toastTimer = setTimeout(() => t.classList.remove('show'), ms);
 }
 function setLoading(on){ $('loader').classList.toggle('show', on); }
 
@@ -2033,12 +2184,21 @@ async function loadComments(lockerId){
     const approved = sbConfig() ? await fetchComments(lockerId) : [];
     const items = [...mine.map(c => renderComment(c, true)), ...approved.map(c => renderComment(c, false))];
     list.innerHTML = items.length ? items.join('') : '<div class="cm-empty">Nessun commento ancora: sii il primo!</div>';
+    $('cmSectionCount').textContent = (mine.length + approved.length) || '';
   }catch(e){
     list.innerHTML = mine.length
       ? mine.map(c => renderComment(c, true)).join('')
       : '<div class="cm-empty">Impossibile caricare i commenti al momento</div>';
+    $('cmSectionCount').textContent = mine.length || '';
   }
 }
+function setCommentsExpanded(open){
+  $('cmSectionToggle').setAttribute('aria-expanded', open ? 'true' : 'false');
+}
+$('cmSectionToggle').onclick = () => {
+  const isOpen = $('cmSectionToggle').getAttribute('aria-expanded') === 'true';
+  setCommentsExpanded(!isOpen);
+};
 
 let cmType = 'commento';
 function setCmType(t){
@@ -2077,6 +2237,7 @@ function resetCommentForm(){
 
 $('cm-toggle').onclick = () => {
   if (!sbConfig()){ toast('Commenti non disponibili: registro pubblico non configurato'); return; }
+  setCommentsExpanded(true);
   $('cm-form').classList.toggle('show');
 };
 $('cm-cancel').onclick = resetCommentForm;
@@ -2420,14 +2581,36 @@ function renderWalletList(){
   loadProofThumbnails(box);
 
   box.querySelectorAll('[data-remove]').forEach(el => {
-    el.onclick = (e) => { e.stopPropagation(); removeFromWallet(el.dataset.remove); toast('Rimosso dai tuoi pacchi'); renderWalletList(); };
+    el.onclick = (e) => {
+      e.stopPropagation();
+      const id = el.dataset.remove;
+      const list = loadWallet();
+      const snapshot = list.find(w => w.lockerId === id);
+      saveWallet(list.filter(w => w.lockerId !== id));
+      renderMarkers(); refreshWalletBadge();
+      let undone = false;
+      toastUndo('Rimosso dai tuoi pacchi', () => {
+        undone = true;
+        const l2 = loadWallet(); l2.unshift(snapshot); saveWallet(l2);
+        renderMarkers(); refreshWalletBadge(); renderWalletList();
+      });
+      // La foto prova viene cancellata solo se l'Annulla non viene toccato
+      setTimeout(() => { if (!undone) deleteEvidencePhoto(id); }, 5300);
+      renderWalletList();
+    };
   });
   box.querySelectorAll('[data-complete]').forEach(el => {
     el.onclick = (e) => {
       e.stopPropagation();
-      completeWalletItem(el.dataset.complete);
-      toast('📚 Spostato nell\'archivio — bella spedizione! 🎉');
+      const id = el.dataset.complete;
+      completeWalletItem(id);
       vibrate(20);
+      toastUndo('📚 Spostato nell\'archivio — bella spedizione! 🎉', () => {
+        const list = loadWallet();
+        const it = list.find(w => w.lockerId === id);
+        if (it){ it.completed = false; delete it.completedAt; saveWallet(list); }
+        renderMarkers(); refreshWalletBadge(); renderWalletList();
+      });
       renderWalletList();
     };
   });
@@ -2847,7 +3030,8 @@ function renderMarkers(){
   cluster.clearLayers();
   for (const k in markerById) delete markerById[k];
   const ms = [];
-  for (const lk of visibleLockers()){
+  const visible = visibleLockers();
+  for (const lk of visible){
     const starred = walletIds.has(lk.id);
     const m = L.marker([lk.lat, lk.lon], { icon: starred ? iconsStarred[lk.brand] : icons[lk.brand] });
     m.on('click', () => openSheet(lk));
@@ -2855,7 +3039,17 @@ function renderMarkers(){
     ms.push(m);
   }
   cluster.addLayers(ms);
+  // Se ci sono dati ma i filtri non lasciano nulla, guida l'utente invece di
+  // mostrare semplicemente una mappa vuota senza spiegazioni
+  $('emptyFilterBanner').classList.toggle('show', lockers.length > 0 && visible.length === 0);
 }
+$('emptyFilterReset').onclick = () => {
+  active = new Set(Object.keys(BRANDS));
+  favOnly = false;
+  smartFilters = { open:false, h24:false, covered:false };
+  document.querySelectorAll('.qf-chip[data-f]').forEach(ch => ch.classList.remove('on'));
+  renderChips(); renderMarkers();
+};
 
 // ----- Filtri (chips) -----
 function renderChips(){
@@ -2971,6 +3165,7 @@ function openSheet(lk){
   $('sh-streetview').href = `https://www.google.com/maps/@?api=1&map_action=pano&viewpoint=${lk.lat},${lk.lon}`;
 
   resetCommentForm();
+  setCommentsExpanded(false);
   loadComments(lk.id);
   loadStatus(lk.id);
   refreshWalletButton();
@@ -2985,8 +3180,17 @@ function openSheet(lk){
 $('sh-fav').onclick = () => {
   if (!currentLocker) return;
   const id = currentLocker.id;
-  if (favs.has(id)){ favs.delete(id); toast('Rimosso dai preferiti'); vibrate([10,40,10]); }
-  else { favs.add(id); toast('Salvato nei preferiti ★'); vibrate(18); }
+  if (favs.has(id)){
+    favs.delete(id); saveFavs(); renderChips(); if (favOnly) renderMarkers();
+    $('sh-fav').classList.remove('on');
+    toastUndo('Rimosso dai preferiti', () => {
+      favs.add(id); saveFavs(); renderChips(); if (favOnly) renderMarkers();
+      $('sh-fav').classList.toggle('on', currentLocker && currentLocker.id === id);
+    });
+    vibrate([10,40,10]);
+    return;
+  }
+  favs.add(id); toast('Salvato nei preferiti ★'); vibrate(18);
   saveFavs();
   $('sh-fav').classList.toggle('on', favs.has(id));
   renderChips();
@@ -3100,6 +3304,34 @@ function shortName(displayName){
 }
 function hideResults(){ sResults.classList.remove('show'); }
 
+// ----- Ricerche recenti: accesso rapido senza riscrivere l'indirizzo -----
+const RECENT_SEARCHES_KEY = 'dexlocker-recent-searches';
+function loadRecentSearches(){ try{ return JSON.parse(lsGet(RECENT_SEARCHES_KEY)) || []; }catch(e){ return []; } }
+function saveRecentSearch(lat, lon, label){
+  let list = loadRecentSearches().filter(r => r.label !== label);
+  list.unshift({ lat, lon, label });
+  lsSet(RECENT_SEARCHES_KEY, JSON.stringify(list.slice(0, 5)));
+}
+function showRecentSearches(){
+  const recent = loadRecentSearches();
+  if (!recent.length){ hideResults(); return; }
+  sResults.innerHTML =
+    '<div class="sr-item muted" style="cursor:default">🕐 Ricerche recenti</div>' +
+    recent.map((r, i) => `
+      <div class="sr-item" data-recent="${i}">
+        <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>
+        <span>${r.label}</span>
+      </div>`).join('');
+  sResults.classList.add('show');
+  sResults.querySelectorAll('[data-recent]').forEach(el => {
+    el.onclick = () => {
+      const r = recent[+el.dataset.recent];
+      selectPlace(r.lat, r.lon, r.label);
+    };
+  });
+}
+sInput.addEventListener('focus', () => { if (!sInput.value) showRecentSearches(); });
+
 // Ricerca-Tutto "Incolla e Vai": se l'utente incolla un messaggio lungo e
 // discorsivo (tipo quelli degli acquirenti Vinted), riconosce il corriere
 // citato e prova a isolare solo la parte con l'indirizzo, ignorando saluti
@@ -3193,6 +3425,7 @@ function selectPlace(lat, lon, label){
     zIndexOffset: 900
   }).addTo(map);
   map.setView([lat, lon], 15);
+  saveRecentSearch(lat, lon, label);
   openList();
 }
 
@@ -3206,7 +3439,7 @@ $('searchClear').onclick = () => {
 };
 sInput.addEventListener('input', () => {
   $('searchClear').classList.toggle('show', sInput.value.length > 0);
-  if (!sInput.value) hideResults();
+  if (!sInput.value) showRecentSearches();
 });
 map.on('click', hideResults);
 
@@ -3404,6 +3637,18 @@ function openSettings(){
 }
 $('btnSettings').onclick = openSettings;
 
+// ----- Tema forzabile (chiaro/scuro/sistema) -----
+const THEME_KEY = 'dexlocker-theme';
+function applyTheme(t){
+  if (t === 'light' || t === 'dark') document.documentElement.dataset.theme = t;
+  else delete document.documentElement.dataset.theme;   // 'system': segue il telefono
+  document.querySelectorAll('.theme-opt').forEach(el => el.classList.toggle('sel', el.dataset.theme === t));
+}
+applyTheme(lsGet(THEME_KEY) || 'system');
+document.querySelectorAll('.theme-opt').forEach(el => {
+  el.onclick = () => { lsSet(THEME_KEY, el.dataset.theme); applyTheme(el.dataset.theme); };
+});
+
 // ----- Modalità Guida (Wake Lock) -----
 // Impedisce allo schermo di spegnersi durante il Giro Spedizioni. Non è
 // persistente tra un avvio e l'altro dell'app: si riattiva ogni volta a mano,
@@ -3569,6 +3814,30 @@ function hideSplashRespectingMinTime(){
   setTimeout(hideSplash, wait);
 }
 
+// ----- Novità di questa versione -----
+// Un piccolo "catch-up" per chi non ha ancora scoperto tutto quello che è
+// stato aggiunto di recente. Compare una sola volta dopo un aggiornamento.
+const LASTSEEN_VERSION_KEY = 'dexlocker-lastseen-version';
+const WHATS_NEW = [
+  '🏆 Profilo Karma: sali di livello contribuendo alla community',
+  '⏱️ Countdown corriere: sai sempre quanto manca al ritiro di oggi',
+  '🌙 Tag di sicurezza notturna nei commenti',
+  '📸 Scudo anti-truffa: foto prova di consegna con data e ora',
+  '📍 La città sotto il logo si aggiorna da sola, ovunque in Italia',
+  '🚗 Modalità Guida: schermo sempre acceso durante il Giro Spedizioni'
+];
+function maybeShowWhatsNew(){
+  if (lsGet(LASTSEEN_VERSION_KEY) === APP_VERSION) return;
+  $('whatsNewList').innerHTML = WHATS_NEW.map(x => `<li>${x}</li>`).join('');
+  $('whatsNewBackdrop').classList.add('show');
+  $('whatsNewModal').classList.add('show');
+}
+$('whatsNewClose').onclick = () => {
+  lsSet(LASTSEEN_VERSION_KEY, APP_VERSION);
+  $('whatsNewBackdrop').classList.remove('show');
+  $('whatsNewModal').classList.remove('show');
+};
+
 // ----- Avvio -----
 loadPlaces();
 renderPlaceMarkers();
@@ -3598,7 +3867,10 @@ if (saved && Array.isArray(saved.lockers) && saved.lockers.length){
 // Caricamento in background durante lo splash: la promessa vince la corsa se
 // finisce prima del tetto massimo, altrimenti vince la rete di sicurezza.
 const splashSafety = new Promise(resolve => setTimeout(resolve, SPLASH_MAX_MS));
-Promise.race([bootLoad, splashSafety]).then(hideSplashRespectingMinTime);
+Promise.race([bootLoad, splashSafety]).then(() => {
+  hideSplashRespectingMinTime();
+  setTimeout(maybeShowWhatsNew, SPLASH_MIN_MS + 700);
+});
 </script>
 </body>
 </html>
