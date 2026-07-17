@@ -13,5 +13,21 @@
     { "src": "icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
     { "src": "icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
     { "src": "icon-512-maskable.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ],
+  "shortcuts": [
+    {
+      "name": "Locker vicini a me",
+      "short_name": "Vicini",
+      "description": "Mostra subito i locker più vicini",
+      "url": "./index.html?shortcut=list",
+      "icons": [{ "src": "icon-192.png", "sizes": "192x192" }]
+    },
+    {
+      "name": "I miei pacchi",
+      "short_name": "Pacchi",
+      "description": "Apri il portafoglio pacchi",
+      "url": "./index.html?shortcut=wallet",
+      "icons": [{ "src": "icon-192.png", "sizes": "192x192" }]
+    }
   ]
 }

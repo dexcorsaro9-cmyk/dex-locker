@@ -24,12 +24,17 @@ const SHELL_FILES = [
 ];
 
 self.addEventListener('install', (event) => {
-  self.skipWaiting();
   event.waitUntil(
     caches.open(CACHE_NAME)
       .then((cache) => cache.addAll(SHELL_FILES))
       .catch(() => {})   // se un file manca non blocchiamo l'installazione
   );
+  // Niente skipWaiting automatico: il nuovo service worker resta "in attesa"
+  // finché l'utente non conferma dal banner "Nuova versione disponibile".
+});
+
+self.addEventListener('message', (event) => {
+  if (event.data && event.data.type === 'SKIP_WAITING') self.skipWaiting();
 });
 
 self.addEventListener('activate', (event) => {
