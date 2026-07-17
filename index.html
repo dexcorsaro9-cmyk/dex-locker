@@ -14,6 +14,16 @@
 <meta name="apple-mobile-web-app-title" content="Lokr">
 <meta name="theme-color" content="#12151C">
 <title>Lokr</title>
+<meta name="description" content="Trova i locker per pacchi di tutti i corrieri, in tutta Italia. InPost, Amazon, Poste, GLS, BRT, DHL, UPS su un'unica mappa.">
+<meta property="og:type" content="website">
+<meta property="og:title" content="Lokr — Tutti i locker per pacchi, un'unica mappa">
+<meta property="og:description" content="Trova i locker per pacchi di tutti i corrieri, in tutta Italia. InPost, Amazon, Poste, GLS, BRT, DHL, UPS su un'unica mappa.">
+<meta property="og:image" content="icon-512.png">
+<meta property="og:locale" content="it_IT">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="Lokr — Tutti i locker per pacchi, un'unica mappa">
+<meta name="twitter:description" content="Trova i locker per pacchi di tutti i corrieri, in tutta Italia.">
+<meta name="twitter:image" content="icon-512.png">
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='22' fill='%23FFC400'/><rect x='16' y='16' width='30' height='28' rx='7' fill='%2312151C'/><rect x='54' y='16' width='30' height='28' rx='7' fill='%2312151C'/><rect x='16' y='54' width='30' height='28' rx='7' fill='%2312151C'/><rect x='54' y='54' width='30' height='28' rx='7' fill='%23D22730'/></svg>">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
 <link rel="manifest" href="manifest.json">
@@ -271,6 +281,13 @@
     display:flex;align-items:center;justify-content:center;font-size:9px;
     border:2px solid #fff;
   }
+  .pin-hot{
+    position:absolute;bottom:-8px;left:-8px;transform:rotate(45deg);
+    width:15px;height:15px;display:flex;align-items:center;justify-content:center;
+    font-size:11px;filter:drop-shadow(0 1px 2px rgba(0,0,0,.5));
+    animation:hotPulse 1.6s ease-in-out infinite;
+  }
+  @keyframes hotPulse{0%,100%{transform:rotate(45deg) scale(1)}50%{transform:rotate(45deg) scale(1.2)}}
   .cluster{
     background:linear-gradient(145deg, color-mix(in srgb, var(--ink) 100%, white 18%), var(--ink));
     color:var(--bg);position:relative;
@@ -574,6 +591,10 @@
   .sh-rows{margin:14px 0 18px;display:flex;flex-direction:column;gap:8px}
   .sh-row{display:flex;gap:9px;align-items:flex-start;font-size:13px;font-weight:500;color:var(--ink)}
   .sh-row svg{width:16px;height:16px;stroke:var(--ink-2);fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;flex-shrink:0;margin-top:1px}
+  .new-badge{
+    display:inline-block;background:var(--danger);color:#fff;font-size:10px;font-weight:800;
+    padding:2px 8px;border-radius:999px;margin-left:6px;animation:badgePulse 1.6s ease-in-out infinite;
+  }
   .sh-btns{display:flex;gap:10px}
   .sh-btn{
     flex:1;padding:14px;border-radius:16px;border:none;cursor:pointer;
@@ -792,6 +813,20 @@
     background:linear-gradient(90deg, color-mix(in srgb, var(--accent) 100%, white 20%), var(--accent));
   }
   .karma-next{font-size:11px;color:var(--ink-2);font-weight:600;margin-top:6px}
+  .karma-streak{
+    font-size:12px;font-weight:800;color:var(--danger);margin-top:8px;
+    display:inline-block;padding:4px 12px;border-radius:999px;
+    background:color-mix(in srgb, var(--danger) 12%, transparent);
+  }
+  .karma-streak:empty{display:none}
+
+  #communityStats{
+    text-align:center;font-size:12.5px;font-weight:600;color:var(--ink-2);
+    padding:10px 12px;margin-bottom:16px;
+  }
+  #communityStats:empty{display:none}
+  #communityStats b{color:var(--ink);font-weight:800}
+
   .set-info{
     background:var(--bg);border:1.5px solid var(--line);border-radius:14px;
     padding:6px 14px;margin-bottom:6px;
@@ -1415,8 +1450,11 @@
       <div class="karma-count" id="karmaCount">0 contributi</div>
       <div class="karma-bar-track"><div class="karma-bar-fill" id="karmaBarFill" style="width:0%"></div></div>
       <div class="karma-next" id="karmaNext"></div>
+      <div id="karmaStreak" class="karma-streak"></div>
     </div>
   </div>
+
+  <div id="communityStats"></div>
 
   <div class="set-section">Stato dell'app</div>
   <div class="set-info set-info-grid">
@@ -1594,6 +1632,15 @@
   <button id="geoPrimerSkip" class="set-btn">Non ora</button>
 </div>
 
+<!-- Riepilogo personale: mostrato una volta al mese, se c'è qualcosa da festeggiare -->
+<div id="recapBackdrop"></div>
+<div id="recapModal" role="dialog" aria-modal="true">
+  <div class="wn-icon">📊</div>
+  <div class="wn-title">Il tuo percorso su Lokr</div>
+  <div id="recapStats"></div>
+  <button id="recapClose" class="set-btn primary">Continua così</button>
+</div>
+
 <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet.markercluster/1.5.3/leaflet.markercluster.min.js"></script>
 <script>
@@ -1603,7 +1650,7 @@
    Geocoding: Nominatim (OpenStreetMap)
    ============================================================ */
 
-const APP_VERSION = '10.1';
+const APP_VERSION = '10.3';
 const HOME_BBOX = '41.40,11.73,42.30,13.30';   // vista iniziale: area di Roma (il nome mostrato è sempre dinamico)
 let currentBBox = HOME_BBOX;                       // area effettivamente caricata in questo momento
 
@@ -2000,6 +2047,7 @@ async function fetchSupabaseApproved(bbox){
       lat: row.lat, lon: row.lon,
       brand: detectBrand({ brand: row.brand || '' }),
       community: true,
+      createdAt: row.created_at || null,
       tags: {
         name: row.nome || '', 'addr:street': row.via || '',
         'addr:city': row.citta || '', opening_hours: row.orari || '',
@@ -2007,6 +2055,51 @@ async function fetchSupabaseApproved(bbox){
       }
     }));
   }finally{ clearTimeout(timer); }
+}
+
+// Badge "🔥 Aggiornato di recente": recupera quali locker hanno ricevuto un
+// commento o una segnalazione di stato nell'ultima ora — dato reale, non
+// un'urgenza inventata.
+async function fetchRecentActivity(){
+  const cfg = sbConfig();
+  if (!cfg) return new Set();
+  const since = new Date(Date.now() - 3600 * 1000).toISOString();
+  const ctrl = new AbortController();
+  const timer = setTimeout(() => ctrl.abort(), 10000);
+  try{
+    const headers = { 'apikey': cfg.key, 'Authorization': 'Bearer ' + cfg.key };
+    const [c, s] = await Promise.all([
+      fetch(`${cfg.url}/rest/v1/comments?select=locker_id&status=eq.approved&created_at=gte.${since}`, { headers, signal: ctrl.signal }),
+      fetch(`${cfg.url}/rest/v1/status_votes?select=locker_id&created_at=gte.${since}`, { headers, signal: ctrl.signal })
+    ]);
+    const cj = c.ok ? await c.json() : [];
+    const sj = s.ok ? await s.json() : [];
+    return new Set([...cj.map(x => x.locker_id), ...sj.map(x => x.locker_id)]);
+  }catch(e){ return new Set(); }
+  finally{ clearTimeout(timer); }
+}
+
+// Numeri reali della community per il mese in corso — nessun dato inventato
+async function fetchCommunityStats(){
+  const cfg = sbConfig();
+  if (!cfg) return null;
+  const start = new Date(); start.setDate(1); start.setHours(0,0,0,0);
+  const since = start.toISOString();
+  const ctrl = new AbortController();
+  const timer = setTimeout(() => ctrl.abort(), 10000);
+  try{
+    const headers = { 'apikey': cfg.key, 'Authorization': 'Bearer ' + cfg.key };
+    const [lk, cm, sv] = await Promise.all([
+      fetch(`${cfg.url}/rest/v1/lockers?select=id&status=eq.approved&created_at=gte.${since}`, { headers, signal: ctrl.signal }),
+      fetch(`${cfg.url}/rest/v1/comments?select=id&status=eq.approved&created_at=gte.${since}`, { headers, signal: ctrl.signal }),
+      fetch(`${cfg.url}/rest/v1/status_votes?select=id&created_at=gte.${since}`, { headers, signal: ctrl.signal })
+    ]);
+    const lkJ = lk.ok ? await lk.json() : [];
+    const cmJ = cm.ok ? await cm.json() : [];
+    const svJ = sv.ok ? await sv.json() : [];
+    return { lockers: lkJ.length, actions: cmJ.length + svJ.length };
+  }catch(e){ return null; }
+  finally{ clearTimeout(timer); }
 }
 
 async function submitToSupabase(row, table = 'lockers', withPendingStatus = true){
@@ -2499,6 +2592,7 @@ $('sh-delegate').onclick = () => { if (currentLocker) delegateLocker(currentLock
 // resta solo un promemoria testuale, non viene letto/interpretato dall'app.
 const WALLET_KEY = 'dexlocker-wallet-v1';
 let walletIds = new Set();
+let recentActivityIds = new Set();   // locker con commento/segnalazione nell'ultima ora
 
 function loadWallet(){ try{ return JSON.parse(lsGet(WALLET_KEY)) || []; }catch(e){ return []; } }
 function saveWallet(list){
@@ -2982,14 +3076,16 @@ async function load(bbox, label, { isRefresh = false } = {}){
   if (firstTime) setLoading(true);
   $('btnReload').classList.add('spin');
   try{
-    const [osmRes, ipRes, sbRes] = await Promise.allSettled([
+    const [osmRes, ipRes, sbRes, actRes] = await Promise.allSettled([
       fetchLockers(bbox, 0),
       fetchInPost(bbox),
-      fetchSupabaseApproved(bbox)
+      fetchSupabaseApproved(bbox),
+      fetchRecentActivity()
     ]);
     const osm      = osmRes.status === 'fulfilled' ? parseElements(osmRes.value) : [];
     const official = ipRes.status === 'fulfilled' ? ipRes.value : [];
     const community = sbRes.status === 'fulfilled' ? sbRes.value : [];
+    recentActivityIds = actRes.status === 'fulfilled' ? actRes.value : new Set();
     if (osmRes.status !== 'fulfilled' && !official.length && !community.length){
       throw (osmRes.reason || new Error('Nessuna fonte dati raggiungibile'));
     }
@@ -3029,12 +3125,13 @@ async function load(bbox, label, { isRefresh = false } = {}){
 }
 
 // ----- Marker -----
-function makeIcon(brandKey, starred = false){
+function makeIcon(brandKey, starred = false, hot = false){
   const b = BRANDS[brandKey];
   const star = starred ? '<div class="pin-star">★</div>' : '';
+  const fire = hot ? '<div class="pin-hot">🔥</div>' : '';
   return L.divIcon({
     className:'',
-    html:`<div class="pin${starred ? ' starred' : ''}" style="--pin-color:${b.color};color:${b.text}"><span>${b.letter}</span>${star}</div>`,
+    html:`<div class="pin${starred ? ' starred' : ''}" style="--pin-color:${b.color};color:${b.text}"><span>${b.letter}</span>${star}${fire}</div>`,
     iconSize:[28,28], iconAnchor:[14,26]
   });
 }
@@ -3131,7 +3228,12 @@ function renderMarkers(){
   const visible = visibleLockers();
   for (const lk of visible){
     const starred = walletIds.has(lk.id);
-    const m = L.marker([lk.lat, lk.lon], { icon: starred ? iconsStarred[lk.brand] : icons[lk.brand] });
+    const hot = recentActivityIds.has(lk.id);
+    let icon;
+    if (!starred && !hot) icon = icons[lk.brand];
+    else if (starred && !hot) icon = iconsStarred[lk.brand];
+    else icon = makeIcon(lk.brand, starred, hot);   // combinazione rara: genero al volo
+    const m = L.marker([lk.lat, lk.lon], { icon });
     m.on('click', () => { m.closePopup(); openSheet(lk); });
     attachLongPress(m, lk);
     markerById[lk.id] = m;
@@ -3252,7 +3354,11 @@ function openSheet(lk){
   if (t.note) rows.push({ icon:'<path d="M12 8v5M12 16.5v.5"/><circle cx="12" cy="12" r="9"/>', text: t.note });
   if (lk.official) rows.push({ icon:'<path d="M20 6L9 17l-5-5"/>', text:'Dato ufficiale InPost' });
   if (lk.custom) rows.push({ icon:'<path d="M4 4h16v16H4z"/><path d="M4 9h16M9 9v11"/>', text:'Dalla tua fonte personale' });
-  if (lk.community) rows.push({ icon:'<path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/>', text:'Aggiunto da un utente · approvato ✓' });
+  if (lk.community){
+    const isNew = lk.createdAt && (Date.now() - new Date(lk.createdAt).getTime()) < 14 * 24 * 3600 * 1000;
+    rows.push({ icon:'<path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/>', text: isNew ? 'Aggiunto da un utente · approvato ✓ <span class="new-badge">🆕 Nuovo</span>' : 'Aggiunto da un utente · approvato ✓' });
+  }
+  if (recentActivityIds.has(lk.id)) rows.push({ icon:'<path d="M12 2c1 4-3 5-3 9a3 3 0 0 0 6 0c0-1.5-1-2-1-3.5 2 1 3 3 3 5.5a5 5 0 0 1-10 0c0-5 3-6 5-11z"/>', text:'🔥 Aggiornato di recente — segnalazione nell\'ultima ora' });
   if (lk.pending) rows.push({ icon:'<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>', text:'In attesa di approvazione (solo tu la vedi)' });
   else if (lk.mine) rows.push({ icon:'<path d="M12 5v14M5 12h14"/>', text:'Aggiunto da te (solo su questo telefono)' });
   $('sh-rows').innerHTML = rows.map(r =>
@@ -3655,6 +3761,26 @@ function incrementKarma(){
   }
   return after;
 }
+
+// ----- Streak di utilizzo: giorni consecutivi in cui apri l'app -----
+// Conta solo aperture reali, un giorno alla volta — nessun trucco, nessuna
+// pressione: si aggiorna in silenzio, la mostriamo solo se è già iniziata.
+const STREAK_KEY = 'dexlocker-streak';
+function updateStreak(){
+  const today = new Date().toISOString().slice(0, 10);
+  let data;
+  try{ data = JSON.parse(lsGet(STREAK_KEY)) || { count:0, last:null }; }catch(e){ data = { count:0, last:null }; }
+  if (data.last === today) return data.count;   // già contato oggi
+  const yesterday = new Date(Date.now() - 86400000).toISOString().slice(0, 10);
+  data.count = (data.last === yesterday) ? data.count + 1 : 1;
+  data.last = today;
+  lsSet(STREAK_KEY, JSON.stringify(data));
+  return data.count;
+}
+function getStreak(){
+  try{ return (JSON.parse(lsGet(STREAK_KEY)) || {}).count || 0; }catch(e){ return 0; }
+}
+
 function renderKarma(){
   const count = getKarma();
   const idx = karmaLevelIndex(count);
@@ -3672,6 +3798,8 @@ function renderKarma(){
     $('karmaBarFill').style.width = '100%';
     $('karmaNext').textContent = '🏆 Livello massimo raggiunto';
   }
+  const streak = getStreak();
+  $('karmaStreak').innerHTML = streak >= 2 ? `🔥 ${streak} giorni di fila` : '';
 }
 
 // Tap sull'avatar Karma: apre il lightbox per vederlo grande e salvarlo
@@ -3752,8 +3880,17 @@ document.querySelectorAll('#settingsQuickNav button').forEach(btn => {
   };
 });
 
+async function loadCommunityStats(){
+  const el = $('communityStats');
+  el.innerHTML = '';
+  const stats = await fetchCommunityStats();
+  if (!stats || (!stats.lockers && !stats.actions)) return;   // niente da mostrare, resta vuoto
+  el.innerHTML = `📊 Questo mese la community ha aggiunto <b>${stats.lockers}</b> locker e lasciato <b>${stats.actions}</b> segnalazioni`;
+}
+
 function openSettings(){
   renderKarma();
+  loadCommunityStats();
   $('set-version').textContent = 'v' + APP_VERSION;
   $('set-count').textContent = lockers.length.toLocaleString('it-IT');
   $('set-inpost').textContent = lockers.filter(l => l.official).length.toLocaleString('it-IT');
@@ -4027,6 +4164,7 @@ function showUpdateBanner(reg){
 loadPlaces();
 renderPlaceMarkers();
 refreshWalletBadge();
+updateStreak();
 const saved = cache.get();
 let bootLoad;
 
