@@ -445,6 +445,19 @@
     flex-shrink:0;
   }
 
+  #updateBanner{
+    position:fixed;left:50%;top:calc(10px + env(safe-area-inset-top));transform:translateX(-50%) translateY(-140%);
+    z-index:6000;display:flex;align-items:center;gap:10px;
+    background:var(--ink);color:var(--bg);padding:10px 10px 10px 16px;border-radius:999px;
+    box-shadow:0 10px 26px rgba(0,0,0,.3);font-size:12.5px;font-weight:700;
+    transition:transform .35s cubic-bezier(.34,1.2,.64,1);
+  }
+  #updateBanner.show{transform:translateX(-50%) translateY(0)}
+  #updateBannerBtn{
+    border:none;background:var(--accent);color:var(--accent-ink);
+    padding:7px 14px;border-radius:999px;font-family:inherit;font-size:12px;font-weight:800;cursor:pointer;
+  }
+
   /* Barra di navigazione in basso */
   /* Modalità Guida: pulsanti più grandi, comodi da toccare mentre si guida */
   .theme-switch{display:flex;gap:8px;margin-bottom:16px}
@@ -1229,6 +1242,10 @@
   </div>
   <div id="loader"><div class="spinner"></div><p id="loaderText">Carico i locker…</p></div>
   <div id="toast" role="status"></div>
+  <div id="updateBanner">
+    <span>🔄 Nuova versione disponibile</span>
+    <button id="updateBannerBtn">Aggiorna</button>
+  </div>
 </div>
 
 <nav id="tabbar" role="tablist" aria-label="Sezioni">
@@ -1586,7 +1603,7 @@
    Geocoding: Nominatim (OpenStreetMap)
    ============================================================ */
 
-const APP_VERSION = '10.0';
+const APP_VERSION = '10.1';
 const HOME_BBOX = '41.40,11.73,42.30,13.30';   // vista iniziale: area di Roma (il nome mostrato è sempre dinamico)
 let currentBBox = HOME_BBOX;                       // area effettivamente caricata in questo momento
 
@@ -3972,8 +3989,38 @@ $('whatsNewClose').onclick = () => {
 // ----- PWA: registra il service worker (installabilità + avvio offline) -----
 if ('serviceWorker' in navigator){
   window.addEventListener('load', () => {
-    navigator.serviceWorker.register('sw.js').catch(() => {});
+    navigator.serviceWorker.register('sw.js').then(reg => {
+      // C'è già una versione in attesa? (es. l'utente ha riaperto l'app
+      // dopo che l'aggiornamento era stato scaricato in background)
+      if (reg.waiting) showUpdateBanner(reg);
+
+      reg.addEventListener('updatefound', () => {
+        const newWorker = reg.installing;
+        if (!newWorker) return;
+        newWorker.addEventListener('statechange', () => {
+          // "installed" + un controller già attivo = è un aggiornamento,
+          // non la primissima installazione dell'app
+          if (newWorker.state === 'installed' && navigator.serviceWorker.controller){
+            showUpdateBanner(reg);
+          }
+        });
+      });
+    }).catch(() => {});
   });
+
+  let swRefreshing = false;
+  navigator.serviceWorker.addEventListener('controllerchange', () => {
+    if (swRefreshing) return;
+    swRefreshing = true;
+    window.location.reload();
+  });
+}
+function showUpdateBanner(reg){
+  $('updateBanner').classList.add('show');
+  $('updateBannerBtn').onclick = () => {
+    if (reg.waiting) reg.waiting.postMessage({ type:'SKIP_WAITING' });
+    $('updateBannerBtn').textContent = 'Aggiorno…';
+  };
 }
 
 // ----- Avvio -----
@@ -4008,6 +4055,16 @@ const splashSafety = new Promise(resolve => setTimeout(resolve, SPLASH_MAX_MS));
 Promise.race([bootLoad, splashSafety]).then(() => {
   hideSplashRespectingMinTime();
   setTimeout(maybeShowWhatsNew, SPLASH_MIN_MS + 700);
+
+  // Scorciatoia dall'icona dell'app (tenuta premuta sulla home): apre
+  // direttamente il pannello richiesto invece della sola mappa
+  const shortcut = new URLSearchParams(location.search).get('shortcut');
+  if (shortcut === 'list' || shortcut === 'wallet'){
+    setTimeout(() => {
+      if (shortcut === 'list') openList();
+      else openWalletPanel();
+    }, SPLASH_MIN_MS + 500);
+  }
 });
 </script>
 </body>
